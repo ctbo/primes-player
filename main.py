@@ -29,6 +29,18 @@ class Card:
     def __repr__(self):
         return self.__str__()
 
+def all_signed_sums(numbers):
+    """
+    Compute all possible sums of `numbers` where each number
+    has a positive or negative sign
+    :param numbers: list of integers
+    :return: set of all possible signed sums
+    """
+    options = {0}
+    for num in numbers:
+        options = {s+num for s in options} | {s-num for s in options}
+    return options
+
 
 class Player(ABC):
 
@@ -42,7 +54,7 @@ class Player(ABC):
         if len(self.hand) == 1:
             cards = f"card {self.hand[0].number}"
         else:
-            cards = f"cards {' '.join(card.number for card in self.hand)}"
+            cards = f"cards {' '.join(str(card.number) for card in self.hand)}"
         return f"<Player {self.name} on square {self.position} holding {cards}>"
 
     def __repr__(self):
@@ -55,26 +67,53 @@ class Player(ABC):
         self.hand.append(card)
         self.hand.sort(key=lambda card: (card.number, card.symbol))
 
-    def kick(self):
-        self.position = 0
+    def set_position(self, position):
+        self.position = position
+
+    def kick(self, symbols):
+        """
+        Check if `symbols` are exactly the prime factors of the current position and
+        kick the player back to zero if they are
+        :param symbols: the list of prime factors
+        :return: True if the player has been kicked
+        """
+        p = self.position
+        for n in symbols:
+            if p % n:
+                return False
+            p //= n
+        if p != 1:
+            return False
+        else:
+            self.position = 0
+            return True
 
     @abstractmethod
-    def make_move(self, opponents):
+    def play_cards(self, opponents):
         """
         Take a list of opponents and return a list of cards to play.
         It's the `Player`'s responsibility to remove the played cards from their hand.
         """
         pass
 
-class Human(Player):
+    @abstractmethod
+    def decide_move(self, numbers):
+        """
+        Change the current position according to list of numbers.
+        Each number can be used to move forward or backward, so there are
+        sometimes multiple possibilities.
+        :param numbers: list of numbers to move by
+        """
 
-    def make_move(self, opponents):
-        print(f"It's your move, {self.name}!")
-        print(f"You are on square number {self.position} and have the following cards:")
-        print("  ".join(f"{i}: {card}" for i, card in enumerate(self.hand)))
+
+class Human(Player):
+    def play_cards(self, opponents):
+        print(f"*** {self.name}, it's your move!")
         print("Your opponents are:")
         for opponent in opponents:
             print(opponent)
+        print(f"You are on square number {self.position} and have the following cards:")
+        print("\n".join(f"{i}: {card}" for i, card in enumerate(self.hand)))
 
         while True: # loop until legal move is input
             s = input("Please enter zero or more cards to play, separated by spaces: ")
@@ -91,6 +130,21 @@ class Human(Player):
             except Exception as e:
                 print(e)
 
+    def decide_move(self, new_positions):
+        assert len(new_positions) > 0, "Sorry, no valid move options."
+        if len(new_positions) == 1:
+            self.position = new_positions[0]
+            return self.position # only one choice so don't bother the user
+        options = ", ".join(str(p) for p in new_positions)
+        while True: # loop until leagl option is input
+            s = input(f"Ok {self.name}, where to go? Options are {options}: ")
+            try:
+                new_position = int(s)
+                assert new_position in new_positions, "Not a valid move."
+                self.position = new_position
+                return new_position
+            except Exception as e:
+                print(e)
 
 
 class Fool(Player):
@@ -107,13 +161,47 @@ class Game:
 
         # deal one card to each player
         for player in self.players:
+            self.draw_for_player(player)
+
+        self.number_of_passes = 0
+
+    def draw_for_player(self, player):
+        if self.deck:
             player.receive_card(self.deck.pop())
 
-        self.current_player = 0
-        self.first_to_pass = None # number of first player to pass in consecutive sequence of passes
+    def run(self):
+        while self.number_of_passes < len(self.players):
+            player = self.players[0]
+            opponents = self.players[1:]
+            cards = player.play_cards(opponents)
+            if len(cards) == 0:
+                self.number_of_passes += 1
+            else:
+                self.number_of_passes = 0
+                numbers = [card.number for card in cards]
+                symbols = [card.symbol for card in cards]
+                kicked = False
+                for opponent in opponents:
+                    if opponent.kick(symbols):
+                        kicked = True # kick all opponents; avoid shot-circuit evaluation as in any()
+                assert kicked or len(set(numbers)) == 1, "Can't play different numbers unless kicking someone."
+                deltas = all_signed_sums(numbers)
+                new_positions = sorted([player.position+delta for delta in deltas])
+                new_positions = [p for p in new_positions if 0 <= p <= 100]
+                if player.decide_move(new_positions) == 100:
+                    break
+
+            for _ in range(len(cards)+1):
+                self.draw_for_player(player)
+
+            self.players = opponents + [player] # rotate players
+
+    def print_result(self):
+        for player in sorted(self.players, key = lambda player: player.position, reverse=True):
+            print(player)
+
 
 if __name__ == '__main__':
-    g = Game("Grant", "Harald", "EJ")
-    print(g.deck)
-    print(g.players)
-    g.players[0].make_move(g.players[1:])
+    g = Game("Grant", "Harald")
+    g.run()
+    g.print_result()
