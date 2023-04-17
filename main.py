@@ -65,10 +65,68 @@ class Player(ABC):
 
     def receive_card(self, card):
         self.hand.append(card)
+        # always keep your hand in sorted order
         self.hand.sort(key=lambda card: (card.number, card.symbol))
 
     def set_position(self, position):
         self.position = position
+
+    def needed_to_kick(self):
+        """
+        :return: list of symbols required to kick this player.
+            This is the prime factorisation of the current position.
+        """
+        primes = []
+        pos = self.position
+        i = 2
+        while pos > 1:
+            if pos % i == 0:
+                primes.append(i)
+                pos //= i
+            else:
+                i += 1
+        return primes
+
+    def legal_moves(self, opponents):
+        """
+        legal moves are any number of cards with the same number
+        or a combination of symbols that kicks an opponent
+        :param opponents: other players
+        :return: a list where each element is a list of indices into `self.hand`
+        """
+        def more(number, j):
+            if j >= len(self.hand) or self.hand[j].number != number:
+                return [[]]
+            else:
+                jss = more(number, j+1)
+                return [[j]+js for js in jss] + jss
+
+        legal = [[]] # passing is always a legal move
+        for i in range(len(self.hand)):
+            number = self.hand[i].number
+            legal += [[i] + js for js in more(number, i+1)]
+
+        def find_kicks(symbols, i, prev_symbol):
+            if not symbols:
+                return [[]]
+            symbol = symbols[0]
+            if symbol != prev_symbol:
+                i = 0
+            result = []
+            for j in range(i, len(self.hand)):
+                if self.hand[j].symbol == symbol:
+                    result += [[j] + xs for xs in find_kicks(symbols[1:], j+1, symbol)]
+            return result
+
+        for opponent in opponents:
+            symbols = opponent.needed_to_kick()
+            kicks = find_kicks(symbols, 0, None)
+            print(f"DEBUG: Trying to kick {opponent.name} with symbols {symbols}: {kicks}")
+            for kick in kicks:
+                if kick not in legal:
+                    legal += [kick]
+
+        return legal
 
     def kick(self, symbols):
         """
@@ -114,7 +172,7 @@ class Human(Player):
             print(opponent)
         print(f"You are on square number {self.position} and have the following cards:")
         print("\n".join(f"{i}: {card}" for i, card in enumerate(self.hand)))
-
+        print(f"{self.legal_moves(opponents)=}")
         while True: # loop until legal move is input
             s = input("Please enter zero or more cards to play, separated by spaces: ")
             try:
@@ -184,6 +242,7 @@ class Game:
                 for opponent in opponents:
                     if opponent.kick(symbols):
                         kicked = True # kick all opponents; avoid shot-circuit evaluation as in any()
+                        print(f"KICKING {opponent.name}")
                 assert kicked or len(set(numbers)) == 1, "Can't play different numbers unless kicking someone."
                 deltas = all_signed_sums(numbers)
                 new_positions = sorted([player.position+delta for delta in deltas])
