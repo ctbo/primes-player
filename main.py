@@ -29,19 +29,6 @@ class Card:
     def __repr__(self):
         return self.__str__()
 
-def all_signed_sums(numbers):
-    """
-    Compute all possible sums of `numbers` where each number
-    has a positive or negative sign
-    :param numbers: list of integers
-    :return: set of all possible signed sums
-    """
-    options = {0}
-    for num in numbers:
-        options = {s+num for s in options} | {s-num for s in options}
-    return options
-
-
 class Player(ABC):
 
     def __init__(self, name):
@@ -154,15 +141,6 @@ class Player(ABC):
         """
         pass
 
-    @abstractmethod
-    def decide_move(self, numbers):
-        """
-        Change the current position according to list of numbers.
-        Each number can be used to move forward or backward, so there are
-        sometimes multiple possibilities.
-        :param numbers: list of numbers to move by
-        """
-
 
 class Human(Player):
     def play_cards(self, opponents):
@@ -185,22 +163,6 @@ class Human(Player):
                 for i in toplay:
                     playing_cards.append(self.hand.pop(i))
                 return playing_cards
-            except Exception as e:
-                print(e)
-
-    def decide_move(self, new_positions):
-        assert len(new_positions) > 0, "Sorry, no valid move options."
-        if len(new_positions) == 1:
-            self.position = new_positions[0]
-            return self.position # only one choice so don't bother the user
-        options = ", ".join(str(p) for p in new_positions)
-        while True: # loop until leagl option is input
-            s = input(f"Ok {self.name}, where to go? Options are {options}: ")
-            try:
-                new_position = int(s)
-                assert new_position in new_positions, "Not a valid move."
-                self.position = new_position
-                return new_position
             except Exception as e:
                 print(e)
 
@@ -244,10 +206,10 @@ class Game:
                         kicked = True # kick all opponents; avoid shot-circuit evaluation as in any()
                         print(f"KICKING {opponent.name}")
                 assert kicked or len(set(numbers)) == 1, "Can't play different numbers unless kicking someone."
-                deltas = all_signed_sums(numbers)
-                new_positions = sorted([player.position+delta for delta in deltas])
-                new_positions = [p for p in new_positions if 0 <= p <= 100]
-                if player.decide_move(new_positions) == 100:
+                new_position = player.position + sum(numbers)
+                assert 0 <= new_position <= 100, "Can't move off the board."
+                player.position = new_position
+                if new_position == 100:
                     break
 
             for _ in range(len(cards)+1):
