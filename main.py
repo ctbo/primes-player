@@ -48,9 +48,18 @@ class Player(ABC):
         return self.__str__()
 
     def reveal_card_numbers(self):
+        """
+        What other players can see.
+        :return: The list of numbers on the back of the cards in the hand
+        """
         return [card.number for card in self.hand]
 
     def receive_card(self, card):
+        """
+        Put a card into the player's hand.
+        :param card: a Card object
+        :return: None
+        """
         self.hand.append(card)
         # always keep your hand in sorted order
         self.hand.sort(key=lambda card: (card.number, card.symbol))
@@ -58,9 +67,13 @@ class Player(ABC):
     def set_position(self, position):
         self.position = position
 
-    def needed_to_kick(self):
+    def move(self, delta):
+        self.position += delta
+        assert 0 <= self.position <= 100, f"Can't move {self.name} off-board to {self.position}"
+
+    def needed_to_setback(self):
         """
-        :return: list of symbols required to kick this player.
+        :return: list of symbols required to set back this player.
             This is the prime factorisation of the current position.
         """
         primes = []
@@ -77,23 +90,37 @@ class Player(ABC):
     def legal_moves(self, opponents):
         """
         legal moves are any number of cards with the same number
-        or a combination of symbols that kicks an opponent
+        or a combination of symbols that setbacks an opponent
         :param opponents: other players
-        :return: a list where each element is a list of indices into `self.hand`
+        :return: a list where each element is a tuple of (list of indices into `self.hand`, revealed) where
+            revealed is a bool indicating whether to play the cards revealed
         """
         def more(number, j):
+            """
+            recursive local function for generating all combinations of adding more of the same number
+            :param number: The number to add
+            :param j: index to start looking
+            :return: list of lists of all combinations
+            """
             if j >= len(self.hand) or self.hand[j].number != number:
                 return [[]]
             else:
                 jss = more(number, j+1)
                 return [[j]+js for js in jss] + jss
 
-        legal = [[]] # passing is always a legal move
+        legal = [([], False)] # passing is always a legal move
         for i in range(len(self.hand)):
             number = self.hand[i].number
-            legal += [[i] + js for js in more(number, i+1)]
+            legal += [([i] + js, False) for js in more(number, i+1)]
 
-        def find_kicks(symbols, i, prev_symbol):
+        def find_setbacks(symbols, i, prev_symbol):
+            """
+            Local recursive function to find combinations of cards with `symbols`
+            :param symbols: The combination of symbols to find
+            :param i: minimum index to look at -- only if same as previous symbol
+            :param prev_symbol: previous symbol covered
+            :return: a list of lists of indices into the current hand
+            """
             if not symbols:
                 return [[]]
             symbol = symbols[0]
@@ -102,42 +129,60 @@ class Player(ABC):
             result = []
             for j in range(i, len(self.hand)):
                 if self.hand[j].symbol == symbol:
-                    result += [[j] + xs for xs in find_kicks(symbols[1:], j+1, symbol)]
+                    result += [[j] + xs for xs in find_setbacks(symbols[1:], j+1, symbol)]
             return result
 
         for opponent in opponents:
-            symbols = opponent.needed_to_kick()
-            kicks = find_kicks(symbols, 0, None)
-            print(f"DEBUG: Trying to kick {opponent.name} with symbols {symbols}: {kicks}")
-            for kick in kicks:
-                if kick not in legal:
-                    legal += [kick]
+            symbols = opponent.needed_to_setback()
+            setbacks = find_setbacks(symbols, 0, None)
+
+            # RULE: can't set back an opponent off the board.
+            # So eliminate all setbacks that would do that
+            for setback in setbacks:
+                if setback: # only consider nonempty sets of cards
+                    delta = sum (self.hand[i].number for i in setback)
+                    if 0 <= opponent.position - delta:
+                        if (setback, True) not in legal:
+                            legal.append((setback, True))
+
+        # RULE: Can't move player off the board.
+        for i in range(len(legal)-1, -1, -1):
+            js, revealed = legal[i]
+            delta = sum(self.hand[j].number for j in js)
+            symbols = [self.hand[j].symbol for j in js]
+            if revealed:
+                total_delta = 0
+                for opponent in opponents:
+                    if opponent.symbols_match(symbols):
+                        total_delta += delta # RULE: For each opponent that is set back, move forward
+            else:
+                total_delta = delta
+            if self.position + total_delta > 100:
+                legal.pop(i)
 
         return legal
 
-    def kick(self, symbols):
+    def symbols_match(self, symbols):
         """
-        Check if `symbols` are exactly the prime factors of the current position and
-        kick the player back to zero if they are
-        :param symbols: the list of prime factors
-        :return: True if the player has been kicked
+        :param symbols: a list of prime factors
+        :return: True if `symbols` are exactly the prime factors of the current position
         """
         p = self.position
         for n in symbols:
             if p % n:
                 return False
             p //= n
-        if p != 1:
-            return False
-        else:
-            self.position = 0
-            return True
+        return p == 1
 
     @abstractmethod
     def play_cards(self, opponents):
         """
-        Take a list of opponents and return a list of cards to play.
-        It's the `Player`'s responsibility to remove the played cards from their hand.
+        The strategy of the player: Decide which cards to play and whether to reveal them.
+        It's the player's responsibility to remove the played cards from their hand.
+
+        :param opponents: A list of Player objects representing the opponents.
+        :return: A tuple (`cards`, `revealed`) where `cards` is a list of `Card` objects
+            and `revealed` is a Boolean where True means cards are played symbol-side up
         """
         pass
 
@@ -145,24 +190,30 @@ class Player(ABC):
 class Human(Player):
     def play_cards(self, opponents):
         print(f"*** {self.name}, it's your move!")
+        print(f"You are on square number {self.position} and have the following cards:")
+        print(", ".join(str(card) for card in self.hand))
         print("Your opponents are:")
         for opponent in opponents:
             print(opponent)
-        print(f"You are on square number {self.position} and have the following cards:")
-        print("\n".join(f"{i}: {card}" for i, card in enumerate(self.hand)))
-        print(f"{self.legal_moves(opponents)=}")
+        legal_moves = self.legal_moves(opponents)
         while True: # loop until legal move is input
-            s = input("Please enter zero or more cards to play, separated by spaces: ")
+            print("Your options are:")
+            for (i, (js, revealed)) in enumerate(legal_moves):
+                print(f"{i}: {'pass' if not js else 'reveal' if revealed else 'discard'} {' '.join(str(self.hand[j]) for j in js)}")
+
+            s = input("What would you like to do? ")
+            if not s:
+                s = "0"
             try:
-                toplay = [int(c) for c in s.split()]
-                assert len(toplay) == len(set(toplay)), "Please don't enter duplicate numbers."
-                assert all(0 <= i < len(self.hand) for i in toplay), "Invalid card number(s)."
-                # TODO: Check if the move is valid
-                toplay.sort(reverse=True)
+                i = int(s)
+                assert i in range(len(legal_moves)), "Invalid option!"
+                # remove the played cards from the hand before returning them
+                to_play, reversed = legal_moves[i]
+                to_play.sort(reverse=True)
                 playing_cards = []
-                for i in toplay:
+                for i in to_play:
                     playing_cards.append(self.hand.pop(i))
-                return playing_cards
+                return playing_cards, revealed
             except Exception as e:
                 print(e)
 
@@ -193,23 +244,26 @@ class Game:
         while self.number_of_passes < len(self.players):
             player = self.players[0]
             opponents = self.players[1:]
-            cards = player.play_cards(opponents)
+            cards, revealed = player.play_cards(opponents)
             if len(cards) == 0:
                 self.number_of_passes += 1
             else:
                 self.number_of_passes = 0
                 numbers = [card.number for card in cards]
+                delta = sum(numbers)
                 symbols = [card.symbol for card in cards]
-                kicked = False
-                for opponent in opponents:
-                    if opponent.kick(symbols):
-                        kicked = True # kick all opponents; avoid shot-circuit evaluation as in any()
-                        print(f"KICKING {opponent.name}")
-                assert kicked or len(set(numbers)) == 1, "Can't play different numbers unless kicking someone."
-                new_position = player.position + sum(numbers)
-                assert 0 <= new_position <= 100, "Can't move off the board."
-                player.position = new_position
-                if new_position == 100:
+                can_setback = any(opponent.symbols_match(symbols) for opponent in opponents)
+
+                if revealed:
+                    assert can_setback, "Can't reveal cards unless setting back an opponent." # RULE
+                    for opponent in opponents:
+                        if opponent.symbols_match(symbols):
+                            opponent.move(-delta)
+                            player.move(delta) # RULE: move forward for each opponent that is set back
+                else:
+                    assert len(set(numbers)) == 1, "Can't play different numbers unless setting back someone." # RULE
+                    player.move(delta)
+                if player.position == 100:
                     break
 
             for _ in range(len(cards)+1):
