@@ -198,7 +198,7 @@ class Player(ABC):
 
 class Human(Player):
     def play_cards(self, opponents):
-        print(f"*** {self.name}, it's your move!")
+        input(f"*** {self.name}, it's your move. Press Enter to look at your cards! ")
         print(f"You are on square number {self.position} and have the following cards:")
         print(", ".join(str(card) for card in self.hand))
         print("Your opponents are:")
@@ -251,12 +251,16 @@ class Game:
             player.receive_card(self.deck.pop())
 
     def run(self):
+        continue_move = False
         while self.number_of_passes < len(self.players):
+            if not continue_move:
+                cards_to_draw = 1
             player = self.players[0]
             opponents = self.players[1:]
             cards, revealed = player.play_cards(opponents)
             if len(cards) == 0:
-                self.number_of_passes += 1
+                if not continue_move:
+                    self.number_of_passes += 1
             else:
                 self.number_of_passes = 0
                 numbers = [card.number for card in cards]
@@ -270,16 +274,23 @@ class Game:
                         if opponent.symbols_match(symbols):
                             opponent.move(-delta)
                             player.move(delta) # RULE: move forward for each opponent that is set back
+                    continue_move = True
                 else:
                     assert len(set(numbers)) == 1, "Can't play different numbers unless setting back someone." # RULE
                     player.move(delta)
+                    continue_move = False
                 if player.position == 100:
                     break
 
-            for _ in range(len(cards)+1):
-                self.draw_for_player(player)
+            cards_to_draw += len(cards)
 
-            self.players = opponents + [player] # rotate players
+            # RULE: If a player reveals cards, they can continue their move.
+            # If they don't, they draw new cards and it's the next player's turn.
+            if not continue_move:
+                for _ in range(cards_to_draw):
+                    self.draw_for_player(player)
+
+                self.players = opponents + [player] # rotate players
 
         # game over. Sort the players
         self.players.sort(key=lambda player: player.position, reverse=True)
