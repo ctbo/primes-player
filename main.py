@@ -4,6 +4,15 @@
 
 import random
 from abc import ABC, abstractmethod
+import os
+import platform
+
+def clear_screen():
+    if platform.system().lower() == "windows":
+        os.system("cls")
+    else:
+        os.system("clear")
+
 
 cardPrimes = [
     [3, 2, 3, 3, 2, 3, 2, 2, 2],
@@ -213,6 +222,7 @@ class Human(Player):
                 playing_cards = []
                 for i in to_play:
                     playing_cards.append(self.hand.pop(i))
+                clear_screen()
                 return playing_cards, revealed
             except Exception as e:
                 print(e)
@@ -271,8 +281,12 @@ class Game:
 
             self.players = opponents + [player] # rotate players
 
+        # game over. Sort the players
+        self.players.sort(key=lambda player: player.position, reverse=True)
+
     def print_result(self):
-        for player in sorted(self.players, key = lambda player: player.position, reverse=True):
+        print("GAME OVER! Result:")
+        for player in self.players:
             print(player)
 
 
