@@ -195,6 +195,15 @@ class Player(ABC):
         """
         pass
 
+    @abstractmethod
+    def receive_information(self, opponent, cards_played):
+        """
+        Receive information about other player's actions.
+        :param opponent: The Player who played the action
+        :param cards_played: A list of mixed types: Either a Card object if the card has been revealed
+            or just the number if the card has been discarded.
+        :return: None
+        """
 
 class Human(Player):
     def play_cards(self, opponents):
@@ -227,6 +236,8 @@ class Human(Player):
             except Exception as e:
                 print(e)
 
+    def receive_information(self, opponent, cards_played):
+        print(f"{self.name}, take note that {opponent.name} has just played {' '.join(str(card) for card in cards_played)}")
 
 class Fool(Player):
 
@@ -254,7 +265,7 @@ class Game:
         continue_move = False
         while self.number_of_passes < len(self.players):
             if not continue_move:
-                cards_to_draw = 1
+                cards_played = []
             player = self.players[0]
             opponents = self.players[1:]
             cards, revealed = player.play_cards(opponents)
@@ -274,20 +285,22 @@ class Game:
                         if opponent.symbols_match(symbols):
                             opponent.move(-delta)
                             player.move(delta) # RULE: move forward for each opponent that is set back
+                    cards_played += cards
                     continue_move = True
                 else:
                     assert len(set(numbers)) == 1, "Can't play different numbers unless setting back someone." # RULE
                     player.move(delta)
+                    cards_played += [card.number for card in cards]
                     continue_move = False
                 if player.position == 100:
                     break
 
-            cards_to_draw += len(cards)
-
             # RULE: If a player reveals cards, they can continue their move.
             # If they don't, they draw new cards and it's the next player's turn.
             if not continue_move:
-                for _ in range(cards_to_draw):
+                for opponent in opponents:
+                    opponent.receive_information(player, cards_played)
+                for _ in range(len(cards_played) + 1): # RULE: draw one more card than played
                     self.draw_for_player(player)
 
                 self.players = opponents + [player] # rotate players
