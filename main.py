@@ -183,14 +183,19 @@ class Player(ABC):
             p //= n
         return p == 1
 
-    @abstractmethod
     def play_cards(self, opponents):
+        js, revealed = self._choose_cards_to_play(opponents)
+        playing_cards = [self.hand[j] for j in js]
+        for card in playing_cards:
+            self.hand.remove(card)
+        return playing_cards, revealed
+
+    @abstractmethod
+    def _choose_cards_to_play(self, opponents):
         """
         The strategy of the player: Decide which cards to play and whether to reveal them.
-        It's the player's responsibility to remove the played cards from their hand.
-
         :param opponents: A list of Player objects representing the opponents.
-        :return: A tuple (`cards`, `revealed`) where `cards` is a list of `Card` objects
+        :return: A tuple (`cards`, `revealed`) where `cards` is a list of indices into `hand` of cards to be played
             and `revealed` is a Boolean where True means cards are played symbol-side up
         """
         pass
@@ -206,7 +211,7 @@ class Player(ABC):
         """
 
 class Human(Player):
-    def play_cards(self, opponents):
+    def _choose_cards_to_play(self, opponents):
         input(f"*** {self.name}, it's your move. Press Enter to look at your cards! ")
         print(f"You are on square number {self.position} and have the following cards:")
         print(", ".join(str(card) for card in self.hand))
@@ -225,14 +230,8 @@ class Human(Player):
             try:
                 i = int(s)
                 assert i in range(len(legal_moves)), "Invalid option!"
-                # remove the played cards from the hand before returning them
-                to_play, revealed = legal_moves[i]
-                to_play.sort(reverse=True)
-                playing_cards = []
-                for i in to_play:
-                    playing_cards.append(self.hand.pop(i))
                 clear_screen()
-                return playing_cards, revealed
+                return legal_moves[i]
             except Exception as e:
                 print(e)
 
@@ -242,13 +241,8 @@ class Human(Player):
 
 class RandomBot(Player):
 
-    def play_cards(self, opponents):
-        to_play, revealed = random.choice(self.legal_moves(opponents))
-        to_play.sort(reverse=True)
-        playing_cards = []
-        for i in to_play:
-            playing_cards.append(self.hand.pop(i))
-        return playing_cards, revealed
+    def _choose_cards_to_play(self, opponents):
+        return random.choice(self.legal_moves(opponents))
 
     def receive_information(self, opponent, cards_played):
         pass
