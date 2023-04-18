@@ -226,7 +226,7 @@ class Human(Player):
                 i = int(s)
                 assert i in range(len(legal_moves)), "Invalid option!"
                 # remove the played cards from the hand before returning them
-                to_play, reversed = legal_moves[i]
+                to_play, revealed = legal_moves[i]
                 to_play.sort(reverse=True)
                 playing_cards = []
                 for i in to_play:
@@ -237,11 +237,21 @@ class Human(Player):
                 print(e)
 
     def receive_information(self, opponent, cards_played):
-        print(f"{self.name}, take note that {opponent.name} has just played {' '.join(str(card) for card in cards_played)}")
+        print(f"""{self.name}, take note that {opponent.name} has just played {
+            ' '.join(str(card) for card in cards_played) if cards_played else 'pass'}""")
 
-class Fool(Player):
+class RandomBot(Player):
 
-    pass
+    def play_cards(self, opponents):
+        to_play, revealed = random.choice(self.legal_moves(opponents))
+        to_play.sort(reverse=True)
+        playing_cards = []
+        for i in to_play:
+            playing_cards.append(self.hand.pop(i))
+        return playing_cards, revealed
+
+    def receive_information(self, opponent, cards_played):
+        pass
 
 class Game:
     def __init__(self, *players):
@@ -315,6 +325,7 @@ class Game:
 
 
 if __name__ == '__main__':
-    g = Game("Grant", "Harald")
+    # g = Game("Grant", "Harald")
+    g = Game (RandomBot("Unlucky Luke"), "Grant")
     g.run()
     g.print_result()
