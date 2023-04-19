@@ -101,7 +101,7 @@ class Player(ABC):
         legal moves are any number of cards with the same number
         or a combination of symbols that setbacks an opponent
         :param opponents: other players
-        :return: a list where each element is a tuple of (list of indices into `self.hand`, revealed) where
+        :return: a list where each element is a tuple of (list of Card objects, revealed) where
             revealed is a bool indicating whether to play the cards revealed
         """
         def more(number, j):
@@ -109,7 +109,7 @@ class Player(ABC):
             recursive local function for generating all combinations of adding more of the same number
             :param number: The number to add
             :param j: index to start looking
-            :return: list of lists of all combinations
+            :return: list of lists of all combinations (indices into self.hand)
             """
             if j >= len(self.hand) or self.hand[j].number != number:
                 return [[]]
@@ -169,7 +169,10 @@ class Player(ABC):
             if self.position + total_delta > 100:
                 legal.pop(i)
 
-        return legal
+        # replace indices by actual card objects
+        legal_cards = [([self.hand[j] for j in js], revealed) for js, revealed in legal]
+
+        return legal_cards
 
     def symbols_match(self, symbols):
         """
@@ -184,8 +187,7 @@ class Player(ABC):
         return p == 1
 
     def play_cards(self, opponents):
-        js, revealed = self._choose_cards_to_play(opponents)
-        playing_cards = [self.hand[j] for j in js]
+        playing_cards, revealed = self._choose_cards_to_play(opponents)
         for card in playing_cards:
             self.hand.remove(card)
         return playing_cards, revealed
@@ -195,7 +197,7 @@ class Player(ABC):
         """
         The strategy of the player: Decide which cards to play and whether to reveal them.
         :param opponents: A list of Player objects representing the opponents.
-        :return: A tuple (`cards`, `revealed`) where `cards` is a list of indices into `hand` of cards to be played
+        :return: A tuple (`cards`, `revealed`) where `cards` is a list Card objects to be played
             and `revealed` is a Boolean where True means cards are played symbol-side up
         """
         pass
@@ -221,8 +223,9 @@ class Human(Player):
         legal_moves = self.legal_moves(opponents)
         while True: # loop until legal move is input
             print("Your options are:")
-            for (i, (js, revealed)) in enumerate(legal_moves):
-                print(f"{i}: {'pass' if not js else 'reveal' if revealed else 'discard'} {' '.join(str(self.hand[j]) for j in js)}")
+            for (i, (cards, revealed)) in enumerate(legal_moves):
+                print(f"""{i}: {'pass' if not cards else 'reveal' if revealed else 'discard'} {
+                    ' '.join(str(card) for card in cards)}""")
 
             s = input("What would you like to do? ")
             if not s:
