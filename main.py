@@ -3,20 +3,7 @@
 # Code: Harald Bögeholz
 
 from players import *
-
-
-cardDict = {
-    0: [3, 2, 3, 3, 2, 3, 2, 2, 2],
-    1: [11, 2, 13, 3, 2, 3, 17, 2, 19],
-    2: [23, 2, 29, 3, 2, 3, 2, 2, 2],
-    3: [11, 5, 13, 31, 3, 37, 17, 2, 19],
-    4: [23, 5, 29, 41, 43, 47, 2, 7, 3],
-    5: [11, 5, 13, 53, 3, 59, 17, 7, 19],
-    6: [23, 5, 29, 31, 3, 37, 61, 7, 67],
-    7: [11, 5, 13, 71, 73, 79, 17, 7, 19],
-    8: [23, 5, 29, 41, 43, 47, 83, 7, 89],
-    9: [11, 5, 13, 31, 97, 37, 17, 7, 19]
-}
+from carddict import cardDict
 
 class Card:
     def __init__(self, number, symbol):
@@ -187,10 +174,10 @@ class Tournament:
             print("No games have been played yet.")
 
 if __name__ == '__main__':
-    # g = Game("Harald", Forrest())
-    # g.run()
-    # g.print_result()
-    # exit()
+    g = Game("Harald", Forrest())
+    g.run()
+    g.print_result()
+    exit()
 
     t = Tournament(GreedyTortoise(), GreedyTortoise(), Forrest(), Forrest())
     # t.set_verbose(True)
