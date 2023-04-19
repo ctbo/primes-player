@@ -265,11 +265,30 @@ class Human(Player):
             ' '.join(str(card) for card in cards_played) if cards_played else 'pass'}""")
 
 class RandomBot(Player):
+    """
+    Select a legal move at random.
+    """
     def _default_name(self):
         return "RandomBot"
 
     def _choose_cards_to_play(self, opponents):
         return random.choice(self.legal_moves(opponents))
+
+    def receive_information(self, opponent, cards_played):
+        pass
+
+class RandomNoPassBot(Player):
+    """
+    Select a legal move at random, but don't pass unless that's the only legal move.
+    """
+    def _default_name(self):
+        return "RandomNoPassBot"
+
+    def _choose_cards_to_play(self, opponents):
+        l = self.legal_moves(opponents)
+        if len(l) == 1:
+            return l[0]
+        return random.choice(l[1:])
 
     def receive_information(self, opponent, cards_played):
         pass
@@ -410,7 +429,7 @@ class Tournament:
 
 if __name__ == '__main__':
     # g = Game("Grant", "Harald")
-    t = Tournament(RandomBot(), RandomBot("Unlucky Luke"))
+    t = Tournament(RandomBot(), RandomNoPassBot())
     # t.set_verbose(True)
     while True:
         t.run(1000)
