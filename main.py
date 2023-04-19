@@ -292,7 +292,7 @@ class Game:
 
     def run(self):
         """
-        Play the game until one player wins or all players pass.
+        Play the game until one player wins or all players pass. Leaves `self.players` sorted by winner.
         :return: None
         """
         for player in self.players:
@@ -302,6 +302,7 @@ class Game:
             self._draw_for_player(player)
         self.number_of_passes = 0
         continue_move = False
+        all_cards_played = []
 
         while self.number_of_passes < len(self.players):
             if not continue_move:
@@ -316,6 +317,7 @@ class Game:
                     print(f"{player.name} passes.")
                 if not continue_move:
                     self.number_of_passes += 1
+                continue_move = False
             else:
                 self.number_of_passes = 0
                 numbers = [card.number for card in cards]
