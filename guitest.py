@@ -81,7 +81,7 @@ class CardGameGUI:
         for card_label in self.opponent_card_labels:
             card_label.destroy()
         for check_button in self.card_checkbuttons:
-            check_button.destroy()
+            check_button.master.destroy()
 
         # Replace the hands with new sets of cards
         self.hand = random.sample(self.all_cards, random.randint(3, 10))
@@ -90,6 +90,7 @@ class CardGameGUI:
         # Create the new card labels and checkbuttons for the updated hands
         self.create_opponent_card_labels()
         self.create_card_checkbuttons()
+
 
 def main():
     root = tk.Tk()
