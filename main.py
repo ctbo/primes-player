@@ -138,18 +138,20 @@ class Tournament:
         self.number_of_setbacks = 0
         self.number_used_all_cards = 0
         self.number_of_cards_left = 0
+        self.winning_score = 0
 
     def set_verbose(self, verbose):
         self.verbose = verbose
 
     def score(self, finished_game):
         """
-        Score a game. Given the final position of a games, update self.scores
+        Score a game. Given the final position of a games, update self.scores and other stats
         :param finished_game: a finished game
         :return: None
         """
         self.games_played += 1
         best_position = finished_game.players[0].position
+        self.winning_score += best_position
         i = 1
         while i < len(finished_game.players) and finished_game.players[i].position == best_position:
             i += 1
@@ -177,8 +179,9 @@ class Tournament:
                 score = self.scores[id(player)]
                 print(f"{player.name}: {score:.2f} ({score/total_scores*100:.1f}%)")
             print(f"""Averages per game: {self.number_of_turns/self.games_played:.1f} moves, {
-                self.number_of_setbacks/self.games_played:.1f} setbacks, {
-                self.number_of_cards_left/self.games_played:.1f} cards in deck at end""")
+                self.number_of_setbacks/self.games_played:.1f} setbacks, winning score {
+                self.winning_score/self.games_played:.1f}, {
+                self.number_of_cards_left/self.games_played:.1f} cards in deck""")
             print(f"{self.number_used_all_cards/self.games_played*100:.1f}% of games used all cards.")
         else:
             print("No games have been played yet.")
@@ -189,7 +192,7 @@ if __name__ == '__main__':
     # g.print_result()
     # exit()
 
-    t = Tournament(GreedyTortoise(), Forrest(), Forrest())
+    t = Tournament(GreedyTortoise(), GreedyTortoise(), Forrest(), Forrest())
     # t.set_verbose(True)
     while True:
         t.run(1000)
