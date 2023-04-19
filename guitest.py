@@ -1,16 +1,18 @@
 import tkinter as tk
 import os
 import random
+from carddict import cardDict
 
 class CardGameGUI:
     def __init__(self, master):
         self.master = master
         self.master.title("Card Game")
 
-        self.card_images_folder = 'card_images'
-        self.all_cards = ["AS", "2H", "3D", "4C", "5H", "6D", "7C", "8H", "9D", "10C"]  # Add more cards as needed
-        self.hand = random.sample(self.all_cards, 5)
-        self.opponent_hand = random.sample(self.all_cards, 5)
+        self.card_images_folder = 'resources'
+        self.card_backs = [f"{i}" for i in cardDict.keys()]
+        self.card_fronts = [f"{number}({symbol})" for number, symbols in cardDict.items() for symbol in symbols]
+        self.hand = random.sample(self.card_fronts, 5)
+        self.opponent_hand = random.sample(self.card_backs, 5)
         self.selected_cards = []
 
         self.load_card_images()
@@ -18,8 +20,8 @@ class CardGameGUI:
 
     def load_card_images(self):
         self.card_image_objects = {}
-        for card in self.all_cards:
-            image_path = "1.png" # os.path.join(self.card_images_folder, f"{card}.png")
+        for card in self.card_backs + self.card_fronts:
+            image_path = os.path.join(self.card_images_folder, f"{card}.png")
             self.card_image_objects[card] = tk.PhotoImage(file=image_path)
 
     def create_widgets(self):
@@ -104,8 +106,8 @@ class CardGameGUI:
             check_button.master.destroy()
 
         # Replace the hands with new sets of cards
-        self.hand = random.sample(self.all_cards, random.randint(3, 10))
-        self.opponent_hand = random.sample(self.all_cards, random.randint(3, 10))
+        self.hand = random.sample(self.card_fronts, random.randint(3, 10))
+        self.opponent_hand = random.sample(self.card_backs, random.randint(3, 10))
 
         # Create the new card labels and checkbuttons for the updated hands
         self.create_opponent_card_labels()
