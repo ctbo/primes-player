@@ -39,11 +39,16 @@ class Card:
         return self.__str__()
 
 class Player(ABC):
-
-    def __init__(self, name=None):
-        if name is None:
-            name = f"{self._default_name()}{random.randrange(1, 9999, 1)}"
-        self.name = name
+    assigned_names = set()
+    def __init__(self, base_name=None):
+        if base_name is None:
+            base_name = self._default_name()
+        self.name = base_name
+        i = 1
+        while self.name in Player.assigned_names:
+            i += 1
+            self.name = f"{base_name}{i}"
+        Player.assigned_names.add(self.name)
         self.reset()
 
     @abstractmethod
@@ -429,7 +434,7 @@ class Tournament:
 
 if __name__ == '__main__':
     # g = Game("Grant", "Harald")
-    t = Tournament(RandomBot(), RandomNoPassBot())
+    t = Tournament(RandomBot(), RandomBot(), RandomBot(), RandomNoPassBot())
     # t.set_verbose(True)
     while True:
         t.run(1000)
