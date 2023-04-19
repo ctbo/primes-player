@@ -62,8 +62,14 @@ class CardGameGUI:
 
         self.card_checkbuttons = []
         for i, card in enumerate(self.hand):
-            check_button = tk.Checkbutton(self.cards_frame, image=self.card_image_objects[card], variable=self.card_vars[i], onvalue=True, offvalue=False)
-            check_button.pack(side='left')
+            card_frame = tk.Frame(self.cards_frame)
+            card_frame.pack(side='left')
+
+            card_label = tk.Label(card_frame, image=self.card_image_objects[card])
+            card_label.pack()
+
+            check_button = tk.Checkbutton(card_frame, variable=self.card_vars[i], onvalue=True, offvalue=False)
+            check_button.pack()
             self.card_checkbuttons.append(check_button)
 
     def play_cards(self):
