@@ -6,6 +6,14 @@
 import random
 from abc import ABC, abstractmethod
 
+import os
+import platform
+def clear_screen():
+    if platform.system().lower() == "windows":
+        os.system("cls")
+    else:
+        os.system("clear")
+
 
 class Player(ABC):
     assigned_names = set()

@@ -2,16 +2,7 @@
 # Game design: Grant Sinclair
 # Code: Harald Bögeholz
 
-import os
-import platform
-
 from players import *
-
-def clear_screen():
-    if platform.system().lower() == "windows":
-        os.system("cls")
-    else:
-        os.system("clear")
 
 
 cardPrimes = [
@@ -187,7 +178,11 @@ class Tournament:
             print("No games have been played yet.")
 
 if __name__ == '__main__':
-    # g = Game("Grant", "Harald")
+    g = Game("Harald", Forrest())
+    g.run()
+    g.print_result()
+    exit()
+
     t = Tournament(Forrest(), Forrest())
     # t.set_verbose(True)
     while True:
