@@ -1,5 +1,3 @@
-# this code was written by GPT-4
-
 import tkinter as tk
 import os
 import random
@@ -25,30 +23,46 @@ class CardGameGUI:
             self.card_image_objects[card] = tk.PhotoImage(file=image_path)
 
     def create_widgets(self):
-        self.label1 = tk.Label(self.master, text="Opponent's cards:")
+        self.left_frame = tk.Frame(self.master)
+        self.left_frame.pack(side='left')
+
+        self.label1 = tk.Label(self.left_frame, text="Opponent's cards:")
         self.label1.pack()
 
-        self.opponent_cards_frame = tk.Frame(self.master)
+        self.opponent_cards_frame = tk.Frame(self.left_frame)
         self.opponent_cards_frame.pack()
 
         self.create_opponent_card_labels()
 
-        self.label2 = tk.Label(self.master, text="Your cards:")
+        self.label2 = tk.Label(self.left_frame, text="Your cards:")
         self.label2.pack()
 
-        self.cards_frame = tk.Frame(self.master)
+        self.cards_frame = tk.Frame(self.left_frame)
         self.cards_frame.pack()
 
         self.create_card_checkbuttons()
 
-        self.play_button = tk.Button(self.master, text="Play selected cards", command=self.play_cards)
+        self.play_button = tk.Button(self.left_frame, text="Play selected cards", command=self.play_cards)
         self.play_button.pack()
 
-        self.next_turn_button = tk.Button(self.master, text="Next Turn", command=self.replace_cards)
+        self.next_turn_button = tk.Button(self.left_frame, text="Next Turn", command=self.replace_cards)
         self.next_turn_button.pack()
 
-        self.quit_button = tk.Button(self.master, text="Quit", command=self.master.quit)
+        self.quit_button = tk.Button(self.left_frame, text="Quit", command=self.master.quit)
         self.quit_button.pack()
+
+        self.right_frame = tk.Frame(self.master)
+        self.right_frame.pack(side='right')
+
+        self.log_label = tk.Label(self.right_frame, text="Game Log:")
+        self.log_label.pack()
+
+        self.scrollbar = tk.Scrollbar(self.right_frame)
+        self.scrollbar.pack(side='right', fill='y')
+
+        self.log_text = tk.Text(self.right_frame, wrap='word', yscrollcommand=self.scrollbar.set)
+        self.log_text.pack()
+        self.scrollbar.config(command=self.log_text.yview)
 
     def create_opponent_card_labels(self):
         self.opponent_card_labels = []
@@ -74,7 +88,7 @@ class CardGameGUI:
 
     def play_cards(self):
         self.selected_cards = [card for card, var in zip(self.hand, self.card_vars) if var.get()]
-        print("Selected cards:", self.selected_cards)
+        self.log_message(f"Selected cards: {', '.join(self.selected_cards)}")
 
     def replace_cards(self):
         # Clear the current card labels and checkbuttons
@@ -91,6 +105,11 @@ class CardGameGUI:
         self.create_opponent_card_labels()
         self.create_card_checkbuttons()
 
+    def log_message(self, message):
+        self.log_text.configure(state='normal')
+        self.log_text.insert(tk.END, message+'\n')
+        self.log_text.configure(state='disabled')
+        self.log_text.see(tk.END)
 
 def main():
     root = tk.Tk()
