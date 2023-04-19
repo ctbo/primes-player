@@ -56,7 +56,6 @@ class Player(ABC):
         """
         :return: A default name prefix for a player of this class.
         """
-        pass
 
     @abstractmethod
     def _choose_cards_to_play(self, opponents):
@@ -66,7 +65,6 @@ class Player(ABC):
         :return: A tuple (`cards`, `revealed`) where `cards` is a list Card objects to be played
             and `revealed` is a Boolean where True means cards are played symbol-side up
         """
-        pass
 
     @abstractmethod
     def receive_information(self, opponent, cards_played):
@@ -269,6 +267,7 @@ class Human(Player):
         print(f"""{self.name}, take note that {opponent.name} has just played {
             ' '.join(str(card) for card in cards_played) if cards_played else 'pass'}""")
 
+
 class RandomBot(Player):
     """
     Select a legal move at random.
@@ -282,6 +281,7 @@ class RandomBot(Player):
     def receive_information(self, opponent, cards_played):
         pass
 
+
 class RandomNoPassBot(Player):
     """
     Select a legal move at random, but don't pass unless that's the only legal move.
@@ -292,6 +292,23 @@ class RandomNoPassBot(Player):
     def _choose_cards_to_play(self, opponents):
         l = self.legal_moves(opponents)
         if len(l) == 1:
+            return l[0]
+        return random.choice(l[1:])
+
+    def receive_information(self, opponent, cards_played):
+        pass
+
+
+class RandomTortoise(Player):
+    """
+    Pass if we're ahead, otherwise pick a random non-passing move
+    """
+    def _default_name(self) -> str:
+        return "RandomTortoise"
+
+    def _choose_cards_to_play(self, opponents):
+        l = self.legal_moves(opponents)
+        if len(l) == 1 or all(self.position > opponent.position for opponent in opponents):
             return l[0]
         return random.choice(l[1:])
 
@@ -388,6 +405,7 @@ class Game:
         for player in self.players:
             print(player)
 
+
 class Tournament:
     def __init__(self, *players):
         assert len(players) >= 2, "The number of players must be at least 2."
@@ -434,7 +452,7 @@ class Tournament:
 
 if __name__ == '__main__':
     # g = Game("Grant", "Harald")
-    t = Tournament(RandomBot(), RandomBot(), RandomBot(), RandomNoPassBot())
+    t = Tournament(RandomNoPassBot(), RandomTortoise())
     # t.set_verbose(True)
     while True:
         t.run(1000)
