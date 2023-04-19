@@ -328,7 +328,7 @@ class GreedyTortoise(Player):
         if len(l) == 1 or all(self.position > opponent.position for opponent in opponents):
             return l[0]
 
-        return max(l[1:], key = lambda m: (not m[1], sum(card.number for card in m[0])))
+        return max(l[1:], key = lambda m: (m[1], sum(card.number for card in m[0])))
 
     def receive_information(self, opponent, cards_played):
         pass
@@ -344,7 +344,7 @@ class Forrest(Player):
     def _choose_cards_to_play(self, opponents):
         l = self.legal_moves(opponents)
 
-        return max(l, key = lambda m: (not m[1], sum(card.number for card in m[0])))
+        return max(l, key = lambda m: (m[1], sum(card.number for card in m[0])))
 
     def receive_information(self, opponent, cards_played):
         pass
