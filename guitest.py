@@ -23,46 +23,52 @@ class CardGameGUI:
             self.card_image_objects[card] = tk.PhotoImage(file=image_path)
 
     def create_widgets(self):
-        self.left_frame = tk.Frame(self.master)
-        self.left_frame.pack(side='left')
+        self.main_frame = tk.Frame(self.master)
+        self.main_frame.pack(fill='both', expand=True)
+
+        self.left_frame = tk.Frame(self.main_frame)
+        self.left_frame.grid(row=0, column=0, sticky='nsew')
 
         self.label1 = tk.Label(self.left_frame, text="Opponent's cards:")
-        self.label1.pack()
+        self.label1.pack(pady=5)
 
         self.opponent_cards_frame = tk.Frame(self.left_frame)
-        self.opponent_cards_frame.pack()
+        self.opponent_cards_frame.pack(pady=5)
 
         self.create_opponent_card_labels()
 
         self.label2 = tk.Label(self.left_frame, text="Your cards:")
-        self.label2.pack()
+        self.label2.pack(pady=5)
 
         self.cards_frame = tk.Frame(self.left_frame)
-        self.cards_frame.pack()
+        self.cards_frame.pack(pady=5)
 
         self.create_card_checkbuttons()
 
         self.play_button = tk.Button(self.left_frame, text="Play selected cards", command=self.play_cards)
-        self.play_button.pack()
+        self.play_button.pack(pady=5)
 
         self.next_turn_button = tk.Button(self.left_frame, text="Next Turn", command=self.replace_cards)
-        self.next_turn_button.pack()
+        self.next_turn_button.pack(pady=5)
 
         self.quit_button = tk.Button(self.left_frame, text="Quit", command=self.master.quit)
-        self.quit_button.pack()
+        self.quit_button.pack(pady=5)
 
-        self.right_frame = tk.Frame(self.master)
-        self.right_frame.pack(side='right')
+        self.right_frame = tk.Frame(self.main_frame)
+        self.right_frame.grid(row=0, column=1, sticky='nsew')
 
         self.log_label = tk.Label(self.right_frame, text="Game Log:")
-        self.log_label.pack()
+        self.log_label.pack(pady=5)
 
         self.scrollbar = tk.Scrollbar(self.right_frame)
         self.scrollbar.pack(side='right', fill='y')
 
         self.log_text = tk.Text(self.right_frame, wrap='word', yscrollcommand=self.scrollbar.set)
-        self.log_text.pack()
+        self.log_text.pack(expand=True, fill='both')
         self.scrollbar.config(command=self.log_text.yview)
+
+        self.main_frame.columnconfigure(1, weight=1)
+        self.main_frame.rowconfigure(0, weight=1)
 
     def create_opponent_card_labels(self):
         self.opponent_card_labels = []
