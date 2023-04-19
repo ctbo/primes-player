@@ -356,8 +356,12 @@ class Game:
 
         self.verbose = False
         self.players = [player if isinstance(player, Player) else Human(player) for player in players]
+
         self.deck = [Card(number, symbol) for number, primes in enumerate(cardPrimes) for symbol in primes]
         random.shuffle(self.deck)
+
+        self.number_of_setbacks = 0
+        self.number_of_turns = 0
 
     def _draw_for_player(self, player):
         if self.deck:
@@ -383,6 +387,7 @@ class Game:
         while self.number_of_passes < len(self.players):
             if not continue_move:
                 all_cards_played = []
+                self.number_of_turns += 1
             player = self.players[0]
             opponents = self.players[1:]
             if self.verbose:
@@ -407,6 +412,7 @@ class Game:
                         if opponent.symbols_match(symbols):
                             opponent.move(-delta)
                             player.move(delta) # RULE: move forward for each opponent that is set back
+                            self.number_of_setbacks += 1
                     cards_played = cards
                     continue_move = True
                 else:
@@ -447,7 +453,9 @@ class Tournament:
         self.verbose = False
         self.players = [player if isinstance(player, Player) else Human(player) for player in players]
         self.scores = {id(player): 0 for player in self.players}
-        self.rounds_played = 0
+        self.games_played = 0
+        self.number_of_turns = 0
+        self.number_of_setbacks = 0
 
     def set_verbose(self, verbose):
         self.verbose = verbose
@@ -458,7 +466,7 @@ class Tournament:
         :param finished_game: a finished game
         :return: None
         """
-        self.rounds_played += 1
+        self.games_played += 1
         best_position = finished_game.players[0].position
         i = 1
         while i < len(finished_game.players) and finished_game.players[i].position == best_position:
@@ -474,20 +482,24 @@ class Tournament:
             if self.verbose:
                 g.print_result()
             self.score(g)
+            self.number_of_turns += g.number_of_turns
+            self.number_of_setbacks += g.number_of_setbacks
 
     def print_results(self):
-        if self.rounds_played:
-            print(f"Tournament results after {self.rounds_played} rounds:")
+        if self.games_played:
+            print(f"Tournament results after {self.games_played} games:")
             total_scores = sum(self.scores.values())
             for player in self.players:
                 score = self.scores[id(player)]
                 print(f"{player.name}: {score} ({score/total_scores*100:.1f}%)")
+            print(f"""Averages per game: {self.number_of_turns/self.games_played:.1f} moves, {
+                self.number_of_setbacks/self.games_played:.1f} setbacks""")
         else:
             print("No games have been played yet.")
 
 if __name__ == '__main__':
     # g = Game("Grant", "Harald")
-    t = Tournament(GreedyTortoise(), Forrest())
+    t = Tournament(Forrest(), Forrest())
     # t.set_verbose(True)
     while True:
         t.run(1000)
