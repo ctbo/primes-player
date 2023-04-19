@@ -40,10 +40,47 @@ class Card:
 
 class Player(ABC):
 
-    def __init__(self, name):
+    def __init__(self, name=None):
+        if name is None:
+            name = f"{self._default_name()}{random.randrange(1, 9999, 1)}"
         self.name = name
+        self.reset()
+
+    @abstractmethod
+    def _default_name(self) -> str:
+        """
+        :return: A default name prefix for a player of this class.
+        """
+        pass
+
+    @abstractmethod
+    def _choose_cards_to_play(self, opponents):
+        """
+        The strategy of the player: Decide which cards to play and whether to reveal them.
+        :param opponents: A list of Player objects representing the opponents.
+        :return: A tuple (`cards`, `revealed`) where `cards` is a list Card objects to be played
+            and `revealed` is a Boolean where True means cards are played symbol-side up
+        """
+        pass
+
+    @abstractmethod
+    def receive_information(self, opponent, cards_played):
+        """
+        Receive information about other player's actions.
+        :param opponent: The Player who played the action
+        :param cards_played: A list of mixed types: Either a Card object if the card has been revealed
+            or just the number if the card has been discarded.
+        :return: None
+        """
+
+    def reset(self):
+        """
+        Reset internal state of player for a new game. Subclasses should override this if they have more internal state
+        :return: None
+        """
         self.hand = []
         self.position = 0
+
 
     def __str__(self):
         cards = "no cards"
@@ -192,27 +229,12 @@ class Player(ABC):
             self.hand.remove(card)
         return playing_cards, revealed
 
-    @abstractmethod
-    def _choose_cards_to_play(self, opponents):
-        """
-        The strategy of the player: Decide which cards to play and whether to reveal them.
-        :param opponents: A list of Player objects representing the opponents.
-        :return: A tuple (`cards`, `revealed`) where `cards` is a list Card objects to be played
-            and `revealed` is a Boolean where True means cards are played symbol-side up
-        """
-        pass
-
-    @abstractmethod
-    def receive_information(self, opponent, cards_played):
-        """
-        Receive information about other player's actions.
-        :param opponent: The Player who played the action
-        :param cards_played: A list of mixed types: Either a Card object if the card has been revealed
-            or just the number if the card has been discarded.
-        :return: None
-        """
 
 class Human(Player):
+
+    def _default_name(self):
+        return "Human"
+
     def _choose_cards_to_play(self, opponents):
         input(f"*** {self.name}, it's your move. Press Enter to look at your cards! ")
         print(f"You are on square number {self.position} and have the following cards:")
@@ -243,6 +265,8 @@ class Human(Player):
             ' '.join(str(card) for card in cards_played) if cards_played else 'pass'}""")
 
 class RandomBot(Player):
+    def _default_name(self):
+        return "RandomBot"
 
     def _choose_cards_to_play(self, opponents):
         return random.choice(self.legal_moves(opponents))
@@ -254,29 +278,42 @@ class Game:
     def __init__(self, *players):
         assert len(players) >= 2, "The number of players must be at least 2."
 
+        self.verbose = False
         self.players = [player if isinstance(player, Player) else Human(player) for player in players]
         self.deck = [Card(number, symbol) for number, primes in enumerate(cardPrimes) for symbol in primes]
         random.shuffle(self.deck)
 
-        # deal one card to each player
-        for player in self.players:
-            self.draw_for_player(player)
-
-        self.number_of_passes = 0
-
-    def draw_for_player(self, player):
+    def _draw_for_player(self, player):
         if self.deck:
             player.receive_card(self.deck.pop())
 
+    def set_verbose(self, verbose):
+        self.verbose = verbose
+
     def run(self):
+        """
+        Play the game until one player wins or all players pass.
+        :return: None
+        """
+        for player in self.players:
+            player.reset()
+        # deal one card to each player
+        for player in self.players:
+            self._draw_for_player(player)
+        self.number_of_passes = 0
         continue_move = False
+
         while self.number_of_passes < len(self.players):
             if not continue_move:
-                cards_played = []
+                all_cards_played = []
             player = self.players[0]
             opponents = self.players[1:]
+            if self.verbose:
+                print(f"{player} to play.")
             cards, revealed = player.play_cards(opponents)
             if len(cards) == 0:
+                if self.verbose:
+                    print(f"{player.name} passes.")
                 if not continue_move:
                     self.number_of_passes += 1
             else:
@@ -292,13 +329,17 @@ class Game:
                         if opponent.symbols_match(symbols):
                             opponent.move(-delta)
                             player.move(delta) # RULE: move forward for each opponent that is set back
-                    cards_played += cards
+                    cards_played = cards
                     continue_move = True
                 else:
                     assert len(set(numbers)) == 1, "Can't play different numbers unless setting back someone." # RULE
                     player.move(delta)
-                    cards_played += [card.number for card in cards]
+                    cards_played = [card.number for card in cards]
                     continue_move = False
+                all_cards_played += cards_played
+                if self.verbose:
+                    print(f"{player.name} plays {' '.join(str(card) for card in cards_played)}")
+
                 if player.position == 100:
                     break
 
@@ -306,9 +347,10 @@ class Game:
             # If they don't, they draw new cards and it's the next player's turn.
             if not continue_move:
                 for opponent in opponents:
-                    opponent.receive_information(player, cards_played)
-                for _ in range(len(cards_played) + 1): # RULE: draw one more card than played
-                    self.draw_for_player(player)
+                    opponent.receive_information(player, all_cards_played)
+
+                for _ in range(len(all_cards_played) + 1): # RULE: draw one more card than played
+                    self._draw_for_player(player)
 
                 self.players = opponents + [player] # rotate players
 
@@ -323,6 +365,7 @@ class Game:
 
 if __name__ == '__main__':
     # g = Game("Grant", "Harald")
-    g = Game (RandomBot("Unlucky Luke"), "Grant")
+    g = Game (RandomBot(), RandomBot("Unlucky Luke"))
+    g.set_verbose(True)
     g.run()
     g.print_result()
