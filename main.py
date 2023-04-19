@@ -5,18 +5,18 @@
 from players import *
 
 
-cardPrimes = [
-    [3, 2, 3, 3, 2, 3, 2, 2, 2],
-    [11, 2, 13, 3, 2, 3, 17, 2, 19],
-    [23, 2, 29, 3, 2, 3, 2, 2, 2],
-    [11, 5, 13, 31, 3, 37, 17, 2, 19],
-    [23, 5, 29, 41, 43, 47, 2, 7, 3],
-    [11, 5, 13, 53, 3, 59, 17, 7, 19],
-    [23, 5, 29, 31, 3, 37, 61, 7, 67],
-    [11, 5, 13, 71, 73, 79, 17, 7, 19],
-    [23, 5, 29, 41, 43, 47, 83, 7, 89],
-    [11, 5, 13, 31, 97, 37, 17, 7, 19]
-]
+cardDict = {
+    0: [3, 2, 3, 3, 2, 3, 2, 2, 2],
+    1: [11, 2, 13, 3, 2, 3, 17, 2, 19],
+    2: [23, 2, 29, 3, 2, 3, 2, 2, 2],
+    3: [11, 5, 13, 31, 3, 37, 17, 2, 19],
+    4: [23, 5, 29, 41, 43, 47, 2, 7, 3],
+    5: [11, 5, 13, 53, 3, 59, 17, 7, 19],
+    6: [23, 5, 29, 31, 3, 37, 61, 7, 67],
+    7: [11, 5, 13, 71, 73, 79, 17, 7, 19],
+    8: [23, 5, 29, 41, 43, 47, 83, 7, 89],
+    9: [11, 5, 13, 31, 97, 37, 17, 7, 19]
+}
 
 class Card:
     def __init__(self, number, symbol):
@@ -37,7 +37,7 @@ class Game:
         self.verbose = False
         self.players = [player if isinstance(player, Player) else Human(player) for player in players]
 
-        self.deck = [Card(number, symbol) for number, primes in enumerate(cardPrimes) for symbol in primes]
+        self.deck = [Card(number, symbol) for number, primes in cardDict.items() for symbol in primes]
         random.shuffle(self.deck)
 
         self.number_of_setbacks = 0
