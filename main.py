@@ -139,7 +139,7 @@ class Player(ABC):
         or a combination of symbols that setbacks an opponent
         :param opponents: other players
         :return: a list where each element is a tuple of (list of Card objects, revealed) where
-            revealed is a bool indicating whether to play the cards revealed
+            revealed is a bool indicating whether to play the cards revealed. Passing is always first in the list.
         """
         def more(number, j):
             """
@@ -364,10 +364,54 @@ class Game:
         for player in self.players:
             print(player)
 
+class Tournament:
+    def __init__(self, *players):
+        assert len(players) >= 2, "The number of players must be at least 2."
+        self.verbose = False
+        self.players = [player if isinstance(player, Player) else Human(player) for player in players]
+        self.scores = {id(player): 0 for player in self.players}
+        self.rounds_played = 0
+
+    def set_verbose(self, verbose):
+        self.verbose = verbose
+
+    def score(self, finished_game):
+        """
+        Score a game. Given the final position of a games, update self.scores
+        :param finished_game: a finished game
+        :return: None
+        """
+        self.rounds_played += 1
+        best_position = finished_game.players[0].position
+        i = 1
+        while i < len(finished_game.players) and finished_game.players[i].position == best_position:
+            i += 1
+        for j in range(i):
+            self.scores[id(finished_game.players[j])] += 1 / i
+
+    def run(self, rounds):
+        for i in range(rounds):
+            g = Game(*self.players)
+            g.set_verbose(self.verbose)
+            g.run()
+            if self.verbose:
+                g.print_result()
+            self.score(g)
+
+    def print_results(self):
+        if self.rounds_played:
+            print(f"Tournament results after {self.rounds_played} rounds:")
+            total_scores = sum(self.scores.values())
+            for player in self.players:
+                score = self.scores[id(player)]
+                print(f"{player.name}: {score} ({score/total_scores*100:.1f}%)")
+        else:
+            print("No games have been played yet.")
 
 if __name__ == '__main__':
     # g = Game("Grant", "Harald")
-    g = Game (RandomBot(), RandomBot("Unlucky Luke"))
-    g.set_verbose(True)
-    g.run()
-    g.print_result()
+    t = Tournament(RandomBot(), RandomBot("Unlucky Luke"))
+    # t.set_verbose(True)
+    while True:
+        t.run(1000)
+        t.print_results()
