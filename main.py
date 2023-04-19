@@ -315,6 +315,25 @@ class RandomTortoise(Player):
     def receive_information(self, opponent, cards_played):
         pass
 
+
+class GreedyTortoise(Player):
+    """
+    Pass if we're ahead, otherwise pick the largest revealed move or the largest unrevealed move
+    """
+    def _default_name(self) -> str:
+        return "GreedyTortoise"
+
+    def _choose_cards_to_play(self, opponents):
+        l = self.legal_moves(opponents)
+        if len(l) == 1 or all(self.position > opponent.position for opponent in opponents):
+            return l[0]
+
+        return max(l[1:], key = (lambda m: (not m[1], sum(card.number for card in m[0]))))
+
+    def receive_information(self, opponent, cards_played):
+        pass
+
+
 class Game:
     def __init__(self, *players):
         assert len(players) >= 2, "The number of players must be at least 2."
@@ -452,7 +471,7 @@ class Tournament:
 
 if __name__ == '__main__':
     # g = Game("Grant", "Harald")
-    t = Tournament(RandomNoPassBot(), RandomTortoise())
+    t = Tournament(RandomNoPassBot(), GreedyTortoise())
     # t.set_verbose(True)
     while True:
         t.run(1000)
