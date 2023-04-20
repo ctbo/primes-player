@@ -106,8 +106,9 @@ class CardGameGUI:
             check_button.master.destroy()
 
         # Replace the hands with new sets of cards
-        self.hand = random.sample(self.card_fronts, random.randint(3, 10))
-        self.opponent_hand = random.sample(self.card_backs, random.randint(3, 10))
+        n = random.randint(3, 10)
+        self.hand = random.sample(self.card_fronts, n)
+        self.opponent_hand = random.sample(self.card_backs, n)
 
         # Create the new card labels and checkbuttons for the updated hands
         self.create_opponent_card_labels()
