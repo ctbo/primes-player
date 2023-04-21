@@ -4,16 +4,6 @@ from players import *
 from carddict import cardDict
 
 
-class Card:
-    def __init__(self, number, symbol):
-        self.number = number
-        self.symbol = symbol
-
-    def __str__(self):
-        return f"<{self.number} ({self.symbol})>"
-
-    def __repr__(self):
-        return self.__str__()
 
 
 class Game:
@@ -21,7 +11,30 @@ class Game:
         assert len(players) >= 2, "The number of players must be at least 2."
 
         self.verbose = False
-        self.players = [player if isinstance(player, Player) else Human(player) for player in players]
+        # self.players = [player if isinstance(player, Player) else Human(player) for player in players]
+        self.players = []
+        self.human_present = False
+        self.GUI = None
+        for player in players:
+            if not isinstance(player, Player):
+                player = Human(player)
+            if isinstance(player, Human):
+                assert not self.GUI, "Can't combine GUI with text mode Human."
+                human_present = True
+            if isinstance(player, GUI):
+                assert not self.GUI, "Only one player per game can have a GUI."
+                assert not self.human_present, "Can't combine GUI with text mode Human."
+                self.GUI = player
+            self.players.append(player)
+
+        self.input_queue = None
+        self.output_queue = None
+        if self.GUI:
+            assert len(self.players) == 2, "GUI presently only supports exactly one opponent."
+            self.input_queue = asyncio.Queue()
+            self.output_queue = asyncio.Queue()
+            self.GUI.connect_queues(self.input_queue, self.output_queue)
+
 
         self.deck = [Card(number, symbol) for number, primes in cardDict.items() for symbol in primes]
         random.shuffle(self.deck)
@@ -41,7 +54,24 @@ class Game:
         Play the game until one player wins or all players pass. Leaves `self.players` sorted by winner.
         :return: None
         """
-        asyncio.run(self.gameplay())
+        if not self.GUI:
+            asyncio.run(self.gameplay())
+        else:
+            asyncio.run(self.gui_gameplay())
+
+    async def gui_gameplay(self):
+        root = tk.Tk()
+        gui = CardGameGUI(root, self.input_queue, self.output_queue)
+
+        asyncio.create_task(self.gameplay())
+        asyncio.create_task(gui.receive_messages())
+
+        async def tk_event_loop():
+            while True:
+                root.update()
+                await asyncio.sleep(0)
+
+        await tk_event_loop()
 
     async def gameplay(self):
         for player in self.players:
