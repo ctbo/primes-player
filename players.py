@@ -443,11 +443,16 @@ class GUI(Player):
             ' '.join(str(card) for card in cards)}""")
 
         cards_to_play, revealed = await self.input_queue.get()
+        if revealed:
+            self.output_queue.put_nowait(f"You reveal {' '.join(str(card) for card in cards_to_play)}")
+        else:
+            self.output_queue.put_nowait(f"You play {' '.join(str(card) for card in cards_to_play)}")
+
         return cards_to_play, revealed
 
 
     def receive_information(self, opponent, cards_played):
-        self.output_queue.put_nowait(f"""{opponent.name} played {
+        self.output_queue.put_nowait(f"""{opponent.name} plays {
             ' '.join(str(card) for card in cards_played) if cards_played else 'pass'}""")
 
 
