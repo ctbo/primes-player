@@ -31,7 +31,7 @@ class Card:
         return self.__str__()
 
 from dataclasses import dataclass
-from typing import List
+from typing import List, Tuple
 
 
 @dataclass
@@ -40,6 +40,7 @@ class GUIState:
     opponent_hand: List[Card]
     player_string: str
     player_hand: List[Card]
+    legal_moves: List[Tuple[List[Card], bool]]
 
 
 class CardGameGUI:
@@ -55,6 +56,7 @@ class CardGameGUI:
         self.hand = random.sample(self.card_fronts, 5)
         self.opponent_hand = random.sample(self.card_backs, 5)
         self.selected_cards = []
+        self.legal_moves = []
 
         self.load_card_images()
         self.create_widgets()
@@ -91,11 +93,11 @@ class CardGameGUI:
         self.play_button = tk.Button(self.left_frame, text="Play selected cards", command=self.play_cards)
         self.play_button.pack(pady=5)
 
-        self.next_turn_button = tk.Button(self.left_frame, text="Play selected card revealed", command=self.reveal_cards)
-        self.next_turn_button.pack(pady=5)
+        self.reveal_button = tk.Button(self.left_frame, text="Play selected card revealed", command=self.reveal_cards)
+        self.reveal_button.pack(pady=5)
 
-        self.quit_button = tk.Button(self.left_frame, text="Quit", command=self.master.quit)
-        self.quit_button.pack(pady=5)
+        # self.quit_button = tk.Button(self.left_frame, text="Quit", command=self.master.quit)
+        # self.quit_button.pack(pady=5)
 
         self.right_frame = tk.Frame(self.main_frame)
         self.right_frame.grid(row=0, column=1, sticky='nsew')
@@ -132,20 +134,33 @@ class CardGameGUI:
             card_label = tk.Label(card_frame, image=self.card_image_objects[f"{card.number}({card.symbol})"])
             card_label.pack()
 
-            check_button = tk.Checkbutton(card_frame, variable=self.card_vars[i], onvalue=True, offvalue=False)
+            check_button = tk.Checkbutton(card_frame, variable=self.card_vars[i],
+                                          onvalue=True, offvalue=False,
+                                          command=self.update_selected_cards)
             check_button.pack()
             self.card_checkbuttons.append(check_button)
 
-    def play_cards(self):
+    def update_selected_cards(self):
         self.selected_cards = [card for card, var in zip(self.hand, self.card_vars) if var.get()]
+        if (self.selected_cards, False) in self.legal_moves:
+            self.play_button.config(state=tk.NORMAL)
+        else:
+            self.play_button.config(state=tk.DISABLED)
+        if (self.selected_cards, True) in self.legal_moves:
+            self.reveal_button.config(state=tk.NORMAL)
+        else:
+            self.reveal_button.config(state=tk.DISABLED)
+
+
+    def play_cards(self):
         self.input_queue.put_nowait((self.selected_cards, False))
         # self.log_message(f"You played: {', '.join(self.selected_cards)}")
 
     def reveal_cards(self):
-        self.selected_cards = [card for card, var in zip(self.hand, self.card_vars) if var.get()]
         self.input_queue.put_nowait((self.selected_cards, True))
 
     def update_GUI_state(self, state):
+        self.legal_moves = state.legal_moves
         self.label_opponent['text'] = state.opponent_string
         self.label_player['text'] = state.player_string
 
@@ -158,6 +173,8 @@ class CardGameGUI:
         # Create the new card labels and checkbuttons for the updated hands
         self.create_opponent_cards(state.opponent_hand)
         self.create_player_cards(state.player_hand)
+
+        self.update_selected_cards()
 
     def log_message(self, message):
         self.log_text.configure(state='normal')
@@ -208,7 +225,7 @@ class Player(ABC):
         Receive information about other player's actions.
         :param opponent: The Player who played the action
         :param cards_played: A list of mixed types: Either a Card object if the card has been revealed
-            or just the number if the card has been discarded.
+            or just the number if the card has been played unrevealed.
         :return: None
         """
 
@@ -396,7 +413,7 @@ class Human(Player):
         while True: # loop until legal move is input
             print("Your options are:")
             for (i, (cards, revealed)) in enumerate(legal_moves):
-                print(f"""{i}: {'pass' if not cards else 'reveal' if revealed else 'discard'} {
+                print(f"""{i}: {'pass' if not cards else 'play revealed' if revealed else 'play'} {
                     ' '.join(str(card) for card in cards)}""")
 
             s = input("What would you like to do? ")
@@ -434,12 +451,13 @@ class GUI(Player):
         gui_state = GUIState(f"{opponent.name} on square {opponent.position_with_hints()}",
                              opponent.hand,
                              f"You are on square {self.position_with_hints()}",
-                             self.hand
+                             self.hand,
+                             self.legal_moves(opponents)
                              )
         self.output_queue.put_nowait(gui_state)
         self.output_queue.put_nowait("Hint: your options are:")
         for cards, revealed in self.legal_moves(opponents):
-            self.output_queue.put_nowait(f"""- {'pass' if not cards else 'reveal' if revealed else 'discard'} {
+            self.output_queue.put_nowait(f"""- {'pass' if not cards else 'play revealed' if revealed else 'play'} {
             ' '.join(str(card) for card in cards)}""")
 
         cards_to_play, revealed = await self.input_queue.get()

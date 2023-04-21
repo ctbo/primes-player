@@ -1,9 +1,11 @@
+# Play the primes game
+# Game design: Grant Sinclair
+# Code: Harald Bögeholz
+
 import asyncio
 
 from players import *
 from carddict import cardDict
-
-
 
 
 class Game:
