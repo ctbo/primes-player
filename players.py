@@ -375,8 +375,8 @@ class Player(ABC):
                 legal.pop(i)
 
         # replace indices by actual card objects
-        legal_cards = [([self.hand[j] for j in js], revealed) for js, revealed in legal]
-
+        legal_cards = [(sorted([self.hand[j] for j in js], key=lambda card:(card.number, card.symbol, id(card))),
+                        revealed) for js, revealed in legal]
         return legal_cards
 
     def symbols_match(self, symbols):
