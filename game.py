@@ -16,26 +16,26 @@ class Game:
         # self.players = [player if isinstance(player, Player) else Human(player) for player in players]
         self.players = []
         self.human_present = False
-        self.GUI = None
+        self.GUI_player = None
         for player in players:
             if not isinstance(player, Player):
                 player = Human(player)
             if isinstance(player, Human):
-                assert not self.GUI, "Can't combine GUI with text mode Human."
+                assert not self.GUI_player, "Can't combine GUI with text mode Human."
                 human_present = True
             if isinstance(player, GUI):
-                assert not self.GUI, "Only one player per game can have a GUI."
+                assert not self.GUI_player, "Only one player per game can have a GUI."
                 assert not self.human_present, "Can't combine GUI with text mode Human."
-                self.GUI = player
+                self.GUI_player = player
             self.players.append(player)
 
         self.input_queue = None
         self.output_queue = None
-        if self.GUI:
+        if self.GUI_player:
             assert len(self.players) == 2, "GUI presently only supports exactly one opponent."
             self.input_queue = asyncio.Queue()
             self.output_queue = asyncio.Queue()
-            self.GUI.connect_queues(self.input_queue, self.output_queue)
+            self.GUI_player.connect_queues(self.input_queue, self.output_queue)
 
 
         self.deck = [Card(number, symbol) for number, primes in cardDict.items() for symbol in primes]
@@ -56,7 +56,7 @@ class Game:
         Play the game until one player wins or all players pass. Leaves `self.players` sorted by winner.
         :return: None
         """
-        if not self.GUI:
+        if not self.GUI_player:
             asyncio.run(self.gameplay())
         else:
             asyncio.run(self.gui_gameplay())
@@ -143,6 +143,10 @@ class Game:
 
         # game over. Sort the players
         self.players.sort(key=lambda player: player.position, reverse=True)
+        if self.GUI_player:
+            self.GUI_player.output_queue.put_nowait("Game over. Result:")
+            for player in self.players:
+                self.GUI_player.output_queue.put_nowait(f"{player.name}: {player.position}")
 
     def print_result(self):
         print("GAME OVER! Result:")
