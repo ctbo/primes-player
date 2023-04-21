@@ -154,7 +154,6 @@ class CardGameGUI:
 
     def play_cards(self):
         self.input_queue.put_nowait((self.selected_cards, False))
-        # self.log_message(f"You played: {', '.join(self.selected_cards)}")
 
     def reveal_cards(self):
         self.input_queue.put_nowait((self.selected_cards, True))
@@ -464,7 +463,10 @@ class GUI(Player):
         if revealed:
             self.output_queue.put_nowait(f"You reveal {' '.join(str(card) for card in cards_to_play)}")
         else:
-            self.output_queue.put_nowait(f"You play {' '.join(str(card) for card in cards_to_play)}")
+            if cards_to_play:
+                self.output_queue.put_nowait(f"You play {' '.join(str(card) for card in cards_to_play)}")
+            else:
+                self.output_queue.put_nowait("You pass")
 
         return cards_to_play, revealed
 

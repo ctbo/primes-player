@@ -94,6 +94,7 @@ class Game:
             if self.verbose:
                 print(f"{player} to play.")
             cards, revealed = await player.play_cards(opponents)
+            cards_played = []
             if len(cards) == 0:
                 if self.verbose:
                     print(f"{player.name} passes.")
@@ -125,14 +126,15 @@ class Game:
                 if self.verbose:
                     print(f"{player.name} plays {' '.join(str(card) for card in cards_played)}")
 
-                if player.position == 100:
-                    break
+            for opponent in opponents:
+                opponent.receive_information(player, cards_played)
+
+            if player.position == 100:
+                break
 
             # RULE: If a player reveals cards, they can continue their move.
             # If they don't, they draw new cards and it's the next player's turn.
             if not continue_move:
-                for opponent in opponents:
-                    opponent.receive_information(player, all_cards_played)
 
                 for _ in range(len(all_cards_played) + 1): # RULE: draw one more card than played
                     self._draw_for_player(player)
