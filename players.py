@@ -35,7 +35,7 @@ class Player(ABC):
         """
 
     @abstractmethod
-    def _choose_cards_to_play(self, opponents):
+    async def _choose_cards_to_play(self, opponents):
         """
         The strategy of the player: Decide which cards to play and whether to reveal them.
         :param opponents: A list of Player objects representing the opponents.
@@ -203,8 +203,8 @@ class Player(ABC):
             p //= n
         return p == 1
 
-    def play_cards(self, opponents):
-        playing_cards, revealed = self._choose_cards_to_play(opponents)
+    async def play_cards(self, opponents):
+        playing_cards, revealed = await self._choose_cards_to_play(opponents)
         for card in playing_cards:
             self.hand.remove(card)
         return playing_cards, revealed
@@ -215,7 +215,7 @@ class Human(Player):
     def _default_name(self):
         return "Human"
 
-    def _choose_cards_to_play(self, opponents):
+    async def _choose_cards_to_play(self, opponents):
         input(f"*** {self.name}, it's your move. Press Enter to look at your cards! ")
         print(f"You are on square number {self.position} and have the following cards:")
         print(", ".join(str(card) for card in self.hand))
@@ -252,7 +252,7 @@ class RandomBot(Player):
     def _default_name(self):
         return "RandomBot"
 
-    def _choose_cards_to_play(self, opponents):
+    async def _choose_cards_to_play(self, opponents):
         return random.choice(self.legal_moves(opponents))
 
     def receive_information(self, opponent, cards_played):
@@ -266,7 +266,7 @@ class RandomNoPassBot(Player):
     def _default_name(self):
         return "RandomNoPassBot"
 
-    def _choose_cards_to_play(self, opponents):
+    async def _choose_cards_to_play(self, opponents):
         l = self.legal_moves(opponents)
         if len(l) == 1:
             return l[0]
@@ -283,7 +283,7 @@ class RandomTortoise(Player):
     def _default_name(self) -> str:
         return "RandomTortoise"
 
-    def _choose_cards_to_play(self, opponents):
+    async def _choose_cards_to_play(self, opponents):
         l = self.legal_moves(opponents)
         if len(l) == 1 or all(self.position > opponent.position for opponent in opponents):
             return l[0]
@@ -300,7 +300,7 @@ class GreedyTortoise(Player):
     def _default_name(self) -> str:
         return "GreedyTortoise"
 
-    def _choose_cards_to_play(self, opponents):
+    async def _choose_cards_to_play(self, opponents):
         l = self.legal_moves(opponents)
         if len(l) == 1 or all(self.position > opponent.position for opponent in opponents):
             return l[0]
@@ -318,7 +318,7 @@ class Forrest(Player):
     def _default_name(self) -> str:
         return "Forrest"
 
-    def _choose_cards_to_play(self, opponents):
+    async def _choose_cards_to_play(self, opponents):
         l = self.legal_moves(opponents)
 
         return max(l, key = lambda m: (m[1], sum(card.number for card in m[0])))
