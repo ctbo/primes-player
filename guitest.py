@@ -1,12 +1,42 @@
 import tkinter as tk
+import asyncio
+import aiotkinter
+
 import os
 import random
 from carddict import cardDict
 
+class Game:
+    def __init__(self, input_queue, output_queue):
+        self.input_queue = input_queue
+        self.output_queue = output_queue
+        self.game_state = "INITIAL"
+
+    async def play(self):
+        while not self.is_game_over():
+            print("Game running ...")
+            self.print_info()
+            user_input = await self.input_queue.get()
+            self.process_action(user_input)
+
+    def is_game_over(self):
+        # Your game over logic
+        pass
+
+    def print_info(self):
+        # Send game information to the GUI
+        self.output_queue.put_nowait("Game information goes here")
+
+    def process_action(self, user_input):
+        self.output_queue.put_nowait(" ".join(user_input))
+        pass
+
 class CardGameGUI:
-    def __init__(self, master):
+    def __init__(self, master, input_queue, output_queue):
         self.master = master
         self.master.title("Card Game")
+        self.input_queue = input_queue
+        self.output_queue = output_queue
 
         self.card_images_folder = 'resources'
         self.card_backs = [f"{i}" for i in cardDict.keys()]
@@ -96,7 +126,8 @@ class CardGameGUI:
 
     def play_cards(self):
         self.selected_cards = [card for card, var in zip(self.hand, self.card_vars) if var.get()]
-        self.log_message(f"Selected cards: {', '.join(self.selected_cards)}")
+        self.input_queue.put_nowait(self.selected_cards)
+        # self.log_message(f"Selected cards: {', '.join(self.selected_cards)}")
 
     def replace_cards(self):
         # Clear the current card labels and checkbuttons
@@ -120,10 +151,33 @@ class CardGameGUI:
         self.log_text.configure(state='disabled')
         self.log_text.see(tk.END)
 
-def main():
+    async def receive_messages(self):
+        while True:
+            print("receive_messages() running ...")
+            message = await self.output_queue.get()
+            self.log_message(message)
+
+
+async def main():
+    input_queue = asyncio.Queue()
+    output_queue = asyncio.Queue()
+
+    asyncio.set_event_loop_policy(aiotkinter.TkinterEventLoopPolicy())
+
     root = tk.Tk()
-    gui = CardGameGUI(root)
-    root.mainloop()
+    gui = CardGameGUI(root, input_queue, output_queue)
+
+    game = Game(input_queue, output_queue)
+    game_task = asyncio.create_task(game.play())
+    gui_msg_task = asyncio.create_task(gui.receive_messages())
+    gui_task = asyncio.create_task(root.mainloop())
+
+
+    # game_task.cancel()
+    # gui_task.cancel()
+    # await game_task
+    # await gui_task
+
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
