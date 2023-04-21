@@ -263,7 +263,9 @@ class Player(ABC):
         """
         self.hand.append(card)
         # always keep your hand in sorted order
-        self.hand.sort(key=lambda card: (card.number, card.symbol))
+        # for identical cards, it's important to also sort them by id
+        # because we are testing whether subsets of cards are in legal_moves()
+        self.hand.sort(key=lambda card: (card.number, card.symbol, id(card)))
 
     def set_position(self, position):
         self.position = position
