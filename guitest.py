@@ -5,6 +5,16 @@ import aiotkinter
 import os
 import random
 from carddict import cardDict
+from dataclasses import dataclass
+from typing import List
+
+@dataclass
+class GUIState:
+    opponent_string: str
+    opponent_hand: List[str]
+    player_string: str
+    player_hand: List[str]
+
 
 class Game:
     def __init__(self, input_queue, output_queue):
@@ -28,8 +38,9 @@ class Game:
         self.output_queue.put_nowait("Game information goes here")
 
     def process_action(self, user_input):
-        self.output_queue.put_nowait(" ".join(user_input))
-        pass
+        self.output_queue.put_nowait(f"playing cards {' '.join(user_input)}")
+        state = GUIState("opponent", user_input, "player", user_input)
+        self.output_queue.put_nowait(state)
 
 class CardGameGUI:
     def __init__(self, master, input_queue, output_queue):
@@ -61,16 +72,16 @@ class CardGameGUI:
         self.left_frame = tk.Frame(self.main_frame)
         self.left_frame.grid(row=0, column=0, sticky='nsew')
 
-        self.label1 = tk.Label(self.left_frame, text="Opponent's cards:")
-        self.label1.pack(pady=5)
+        self.label_opponent = tk.Label(self.left_frame, text="Opponent's cards:")
+        self.label_opponent.pack(pady=5)
 
         self.opponent_cards_frame = tk.Frame(self.left_frame)
         self.opponent_cards_frame.pack(pady=5)
 
         self.create_opponent_card_labels()
 
-        self.label2 = tk.Label(self.left_frame, text="Your cards:")
-        self.label2.pack(pady=5)
+        self.label_player = tk.Label(self.left_frame, text="Your cards:")
+        self.label_player.pack(pady=5)
 
         self.cards_frame = tk.Frame(self.left_frame)
         self.cards_frame.pack(pady=5)
@@ -145,6 +156,24 @@ class CardGameGUI:
         self.create_opponent_card_labels()
         self.create_card_checkbuttons()
 
+    def update_GUI_state(self, state):
+        self.label_opponent['text'] = state.opponent_string
+        self.label_player['text'] = state.player_string
+
+        # Clear the current card labels and checkbuttons
+        for card_label in self.opponent_card_labels:
+            card_label.destroy()
+        for check_button in self.card_checkbuttons:
+            check_button.master.destroy()
+
+        # Replace the hands with new sets of cards
+        self.hand = state.player_hand
+        self.opponent_hand = state.opponent_hand
+
+        # Create the new card labels and checkbuttons for the updated hands
+        self.create_opponent_card_labels()
+        self.create_card_checkbuttons()
+
     def log_message(self, message):
         self.log_text.configure(state='normal')
         self.log_text.insert(tk.END, message+'\n')
@@ -155,7 +184,10 @@ class CardGameGUI:
         while True:
             print("receive_messages() running ...")
             message = await self.output_queue.get()
-            self.log_message(message)
+            if isinstance(message, GUIState):
+                self.update_GUI_state(message)
+            else:
+                self.log_message(message)
 
 
 async def main():
