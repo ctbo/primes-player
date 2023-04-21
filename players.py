@@ -167,7 +167,6 @@ class CardGameGUI:
 
     async def receive_messages(self):
         while True:
-            print("receive_messages() running ...")
             message = await self.output_queue.get()
             if isinstance(message, GUIState):
                 self.update_GUI_state(message)
@@ -427,6 +426,11 @@ class GUI(Player):
                              self.hand
                              )
         self.output_queue.put_nowait(gui_state)
+        self.output_queue.put_nowait("Hint: your options are:")
+        for cards, revealed in self.legal_moves(opponents):
+            self.output_queue.put_nowait(f"""- {'pass' if not cards else 'reveal' if revealed else 'discard'} {
+            ' '.join(str(card) for card in cards)}""")
+
         cards_to_play, revealed = await self.input_queue.get()
         return cards_to_play, revealed
 
