@@ -272,6 +272,17 @@ class Player(ABC):
                 i += 1
         return primes
 
+    def position_with_hints(self):
+        """
+        Format the current position with prime factors for text mode play.
+        :return: formatted string to print the current position
+        """
+        nds = self.needed_to_setback()
+        result = str(self.position)
+        if len(nds) > 1:
+            result += f" = {' * '.join(str(p) for p in nds)}"
+        return result
+
     def legal_moves(self, opponents):
         """
         legal moves are any number of cards with the same number
@@ -420,9 +431,9 @@ class GUI(Player):
     async def _choose_cards_to_play(self, opponents):
         assert len(opponents) == 1
         opponent = opponents[0]
-        gui_state = GUIState(f"{opponent.name} on square {opponent.position}",
+        gui_state = GUIState(f"{opponent.name} on square {opponent.position_with_hints()}",
                              opponent.hand,
-                             f"You are on square {self.position}",
+                             f"You are on square {self.position_with_hints()}",
                              self.hand
                              )
         self.output_queue.put_nowait(gui_state)
