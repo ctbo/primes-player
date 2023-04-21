@@ -162,21 +162,19 @@ async def main():
     input_queue = asyncio.Queue()
     output_queue = asyncio.Queue()
 
-    asyncio.set_event_loop_policy(aiotkinter.TkinterEventLoopPolicy())
-
     root = tk.Tk()
     gui = CardGameGUI(root, input_queue, output_queue)
 
     game = Game(input_queue, output_queue)
     game_task = asyncio.create_task(game.play())
     gui_msg_task = asyncio.create_task(gui.receive_messages())
-    gui_task = asyncio.create_task(root.mainloop())
 
+    async def run():
+        while True:
+            root.update()
+            await asyncio.sleep(0)
 
-    # game_task.cancel()
-    # gui_task.cancel()
-    # await game_task
-    # await gui_task
+    await run()
 
 
 if __name__ == "__main__":
