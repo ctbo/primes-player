@@ -77,6 +77,41 @@ class CardGameGUI:
         self.left_frame = tk.Frame(self.main_frame)
         self.left_frame.grid(row=0, column=0, sticky='nsew')
 
+        # Create a new frame for the top information
+        self.top_info_frame = tk.Frame(self.left_frame)
+        self.top_info_frame.pack(pady=5)
+
+        # Add "Top of deck:" text and card image
+        self.top_of_deck_label = tk.Label(self.top_info_frame, text="Top of deck:")
+        self.top_of_deck_label.pack(side='left', padx=5)
+
+        self.deck_top_image = self.card_image_objects["0"]
+        self.deck_top_label = tk.Label(self.top_info_frame, image=self.deck_top_image)
+        self.deck_top_label.pack(side='left', padx=5)
+
+        # Add "Opponent:" text and card image
+        self.opponent_label = tk.Label(self.top_info_frame, text="Opponent:")
+        self.opponent_label.pack(side='left', padx=5)
+
+        self.opponent_position_image = self.card_image_objects["0"]
+        self.opponent_position_label = tk.Label(self.top_info_frame, image=self.opponent_position_image)
+        self.opponent_position_label.pack(side='left', padx=5)
+
+        # Add "You:" text and card image
+        self.player_label = tk.Label(self.top_info_frame, text="You:")
+        self.player_label.pack(side='left', padx=5)
+
+        self.player_position_image = self.card_image_objects["0"]
+        self.player_position_label = tk.Label(self.top_info_frame, image=self.player_position_image)
+        self.player_position_label.pack(side='left', padx=5)
+
+        self.moveto_label = tk.Label(self.top_info_frame, text="moving to:")
+        self.moveto_label.pack(side='left', padx=5)
+
+        self.player_moveto_image = self.card_image_objects["0"]
+        self.player_moveto_label = tk.Label(self.top_info_frame, image=self.player_moveto_image)
+        self.player_moveto_label.pack(side='left', padx=5)
+
         self.label_opponent = tk.Label(self.left_frame, text="Opponent's cards:")
         self.label_opponent.pack(pady=5)
 
@@ -111,7 +146,7 @@ class CardGameGUI:
         self.scrollbar = tk.Scrollbar(self.right_frame)
         self.scrollbar.pack(side='right', fill='y')
 
-        self.log_text = tk.Text(self.right_frame, wrap='word', yscrollcommand=self.scrollbar.set)
+        self.log_text = tk.Text(self.right_frame, wrap='word', width = 30, yscrollcommand=self.scrollbar.set)
         self.log_text.pack(expand=True, fill='both')
         self.scrollbar.config(command=self.log_text.yview)
 
