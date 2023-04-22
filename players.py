@@ -38,9 +38,11 @@ from typing import List, Tuple, Union
 
 @dataclass
 class GUIState:
-    opponent_string: str
+    opponent_name: str
+    opponent_position: int
     opponent_hand: List[Card]
-    player_string: str
+    player_name: str
+    player_position: int
     player_hand: List[Card]
     legal_moves: List[Tuple[List[Card], bool]]
     top_of_deck: int
@@ -49,7 +51,7 @@ class GUIState:
 class CardGameGUI:
     def __init__(self, master, input_queue, output_queue):
         self.master = master
-        self.master.title("Card Game")
+        self.master.title("Grant's Game")
         self.input_queue = input_queue
         self.output_queue = output_queue
 
@@ -60,6 +62,7 @@ class CardGameGUI:
         self.opponent_hand = random.sample(self.card_backs, 5)
         self.selected_cards = []
         self.legal_moves = []
+        self.player_position = 0
 
         self.load_images()
         self.create_widgets()
@@ -95,16 +98,16 @@ class CardGameGUI:
         self.deck_top_label.pack(side='left', padx=5)
 
         # Add "Opponent:" text and card image
-        self.opponent_label = tk.Label(self.top_info_frame, text="Opponent:")
-        self.opponent_label.pack(side='left', padx=5)
+        self.opponent_name_label = tk.Label(self.top_info_frame, text="Opponent:")
+        self.opponent_name_label.pack(side='left', padx=5)
 
         self.opponent_position_image = self.image_objects[0]
         self.opponent_position_label = tk.Label(self.top_info_frame, image=self.opponent_position_image)
         self.opponent_position_label.pack(side='left', padx=5)
 
         # Add "You:" text and card image
-        self.player_label = tk.Label(self.top_info_frame, text="You:")
-        self.player_label.pack(side='left', padx=5)
+        self.player_name_label = tk.Label(self.top_info_frame, text="You:")
+        self.player_name_label.pack(side='left', padx=5)
 
         self.player_position_image = self.image_objects[0]
         self.player_position_label = tk.Label(self.top_info_frame, image=self.player_position_image)
@@ -193,6 +196,8 @@ class CardGameGUI:
             self.reveal_button.config(state=tk.NORMAL)
         else:
             self.reveal_button.config(state=tk.DISABLED)
+        delta = sum(card.number for card in self.selected_cards)
+        self.player_moveto_label.configure(image = self.image_objects[self.player_position + delta])
 
 
     def play_cards(self):
@@ -203,8 +208,15 @@ class CardGameGUI:
 
     def update_GUI_state(self, state):
         self.legal_moves = state.legal_moves
-        self.label_opponent['text'] = state.opponent_string
-        self.label_player['text'] = state.player_string
+        self.player_position = state.player_position
+        self.opponent_name_label.configure(text = f"{state.opponent_name}:")
+        self.opponent_position_label.configure(image = self.image_objects[state.opponent_position])
+        # self.player_name_label.configure(text = state.player_name)
+        self.player_position_label.configure(image = self.image_objects[state.player_position])
+        self.player_moveto_label.configure(image = self.image_objects[state.player_position])
+        self.label_opponent.configure(text = f"{state.opponent_name}'s cards:")
+        # self.label_opponent['text'] = state.opponent_string
+        # self.label_player['text'] = state.player_string
 
         # Clear the current card labels and checkbuttons
         for card_label in self.opponent_card_labels:
@@ -511,9 +523,11 @@ class GUI(Player):
     async def _choose_cards_to_play(self, opponents):
         assert len(opponents) == 1
         opponent = opponents[0]
-        gui_state = GUIState(f"{opponent.name} on square {opponent.position_with_hints()}",
+        gui_state = GUIState(opponent.name,
+                             opponent.position,
                              opponent.hand,
-                             f"You are on square {self.position_with_hints()}",
+                             "You",
+                             self.position,
                              self.hand,
                              self.legal_moves(opponents),
                              self.top_of_deck
