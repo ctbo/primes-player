@@ -93,7 +93,7 @@ class CardGameGUI:
         self.play_button = tk.Button(self.left_frame, text="Play selected cards", command=self.play_cards)
         self.play_button.pack(pady=5)
 
-        self.reveal_button = tk.Button(self.left_frame, text="Play selected card revealed", command=self.reveal_cards)
+        self.reveal_button = tk.Button(self.left_frame, text="Play selected cards revealed", command=self.reveal_cards)
         self.reveal_button.pack(pady=5)
 
         # self.quit_button = tk.Button(self.left_frame, text="Quit", command=self.master.quit)
