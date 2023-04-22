@@ -3,6 +3,8 @@
 # Game design: Grant Sinclair
 # Code: Harald Bögeholz
 
+from __future__ import annotations
+
 import random
 from abc import ABC, abstractmethod
 import tkinter as tk
@@ -31,7 +33,7 @@ class Card:
         return self.__str__()
 
 from dataclasses import dataclass
-from typing import List, Tuple
+from typing import List, Tuple, Union
 
 
 @dataclass
@@ -41,6 +43,7 @@ class GUIState:
     player_string: str
     player_hand: List[Card]
     legal_moves: List[Tuple[List[Card], bool]]
+    top_of_deck: int
 
 
 class CardGameGUI:
@@ -189,6 +192,18 @@ class CardGameGUI:
             else:
                 self.log_message(message)
 
+@dataclass
+class Information:
+    pass
+
+@dataclass
+class CardsPlayedInfo(Information):
+    opponent: 'Player'
+    cards_played: List[Union[Card, int]]
+
+@dataclass
+class TopOfDeckInfo(Information):
+    number: int
 
 class Player(ABC):
     assigned_names = set()
@@ -219,12 +234,10 @@ class Player(ABC):
         """
 
     @abstractmethod
-    def receive_information(self, opponent, cards_played):
+    def receive_information(self, info: Information):
         """
         Receive information about other player's actions.
-        :param opponent: The Player who played the action
-        :param cards_played: A list of mixed types: Either a Card object if the card has been revealed
-            or just the number if the card has been played unrevealed.
+        :param info: an Information object
         :return: None
         """
 
@@ -428,9 +441,17 @@ class Human(Player):
             except Exception as e:
                 print(e)
 
-    def receive_information(self, opponent, cards_played):
-        print(f"""{self.name}, take note that {opponent.name} has just played {
-            ' '.join(str(card) for card in cards_played) if cards_played else 'pass'}""")
+    def receive_information(self, info: Information):
+        if isinstance(info, CardsPlayedInfo):
+            print(f"""{self.name}, take note that {info.opponent.name} has just played {
+                ' '.join(str(card) for card in info.cards_played) if info.cards_played else 'pass'}""")
+        else:
+            assert(isinstance(info, TopOfDeckInfo))
+            if TopOfDeckInfo.number is None:
+                print(f"{self.name}, take note that the deck is empty")
+            else:
+                print(f"{self.name}, take note that the top of the deck is a {info.number}")
+
 
 
 class GUI(Player):
@@ -438,6 +459,7 @@ class GUI(Player):
         super().__init__()
         self.input_queue = None
         self.output_queue = None
+        self.top_of_deck = None
 
     def connect_queues(self, input_queue, output_queue):
         self.input_queue = input_queue
@@ -453,7 +475,8 @@ class GUI(Player):
                              opponent.hand,
                              f"You are on square {self.position_with_hints()}",
                              self.hand,
-                             self.legal_moves(opponents)
+                             self.legal_moves(opponents),
+                             self.top_of_deck
                              )
         self.output_queue.put_nowait(gui_state)
         self.output_queue.put_nowait("Hint: your options are:")
@@ -473,10 +496,13 @@ class GUI(Player):
         return cards_to_play, revealed
 
 
-    def receive_information(self, opponent, cards_played):
-        self.output_queue.put_nowait(f"""{opponent.name} plays {
-            ' '.join(str(card) for card in cards_played) if cards_played else 'pass'}""")
-
+    def receive_information(self, info: Information):
+        if isinstance(info, CardsPlayedInfo):
+            self.output_queue.put_nowait(f"""{info.opponent.name} plays {
+                ' '.join(str(card) for card in info.cards_played) if info.cards_played else 'pass'}""")
+        else:
+            assert(isinstance(info, TopOfDeckInfo))
+            self.top_of_deck = info.number
 
 class RandomBot(Player):
     """
@@ -488,7 +514,7 @@ class RandomBot(Player):
     async def _choose_cards_to_play(self, opponents):
         return random.choice(self.legal_moves(opponents))
 
-    def receive_information(self, opponent, cards_played):
+    def receive_information(self, info: Information):
         pass
 
 
@@ -505,7 +531,7 @@ class RandomNoPassBot(Player):
             return l[0]
         return random.choice(l[1:])
 
-    def receive_information(self, opponent, cards_played):
+    def receive_information(self, info: Information):
         pass
 
 
@@ -522,7 +548,7 @@ class RandomTortoise(Player):
             return l[0]
         return random.choice(l[1:])
 
-    def receive_information(self, opponent, cards_played):
+    def receive_information(self, info: Information):
         pass
 
 
@@ -540,7 +566,7 @@ class GreedyTortoise(Player):
 
         return max(l[1:], key = lambda m: (m[1], sum(card.number for card in m[0])))
 
-    def receive_information(self, opponent, cards_played):
+    def receive_information(self, info: Information):
         pass
 
 
@@ -556,7 +582,7 @@ class Forrest(Player):
 
         return max(l, key = lambda m: (m[1], sum(card.number for card in m[0])))
 
-    def receive_information(self, opponent, cards_played):
+    def receive_information(self, info: Information):
         pass
 
 

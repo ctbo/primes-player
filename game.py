@@ -127,7 +127,7 @@ class Game:
                     print(f"{player.name} plays {' '.join(str(card) for card in cards_played)}")
 
             for opponent in opponents:
-                opponent.receive_information(player, cards_played)
+                opponent.receive_information(CardsPlayedInfo(player, cards_played))
 
             if player.position == 100:
                 break
