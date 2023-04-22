@@ -61,14 +61,19 @@ class CardGameGUI:
         self.selected_cards = []
         self.legal_moves = []
 
-        self.load_card_images()
+        self.load_images()
         self.create_widgets()
 
-    def load_card_images(self):
-        self.card_image_objects = {}
+    def load_images(self):
+        self.image_objects = {}
+
         for card in self.card_backs + self.card_fronts:
             image_path = os.path.join(self.card_images_folder, f"{card}.png")
-            self.card_image_objects[card] = tk.PhotoImage(file=image_path)
+            self.image_objects[card] = tk.PhotoImage(file=image_path)
+
+        for square in range(101):
+            image_path = os.path.join(self.card_images_folder, f"square-{square}.png")
+            self.image_objects[square] = tk.PhotoImage(file=image_path)
 
     def create_widgets(self):
         self.main_frame = tk.Frame(self.master)
@@ -85,7 +90,7 @@ class CardGameGUI:
         self.top_of_deck_label = tk.Label(self.top_info_frame, text="Top of deck:")
         self.top_of_deck_label.pack(side='left', padx=5)
 
-        self.deck_top_image = self.card_image_objects["0"]
+        self.deck_top_image = self.image_objects["0"]
         self.deck_top_label = tk.Label(self.top_info_frame, image=self.deck_top_image)
         self.deck_top_label.pack(side='left', padx=5)
 
@@ -93,7 +98,7 @@ class CardGameGUI:
         self.opponent_label = tk.Label(self.top_info_frame, text="Opponent:")
         self.opponent_label.pack(side='left', padx=5)
 
-        self.opponent_position_image = self.card_image_objects["0"]
+        self.opponent_position_image = self.image_objects[0]
         self.opponent_position_label = tk.Label(self.top_info_frame, image=self.opponent_position_image)
         self.opponent_position_label.pack(side='left', padx=5)
 
@@ -101,14 +106,14 @@ class CardGameGUI:
         self.player_label = tk.Label(self.top_info_frame, text="You:")
         self.player_label.pack(side='left', padx=5)
 
-        self.player_position_image = self.card_image_objects["0"]
+        self.player_position_image = self.image_objects[0]
         self.player_position_label = tk.Label(self.top_info_frame, image=self.player_position_image)
         self.player_position_label.pack(side='left', padx=5)
 
         self.moveto_label = tk.Label(self.top_info_frame, text="moving to:")
         self.moveto_label.pack(side='left', padx=5)
 
-        self.player_moveto_image = self.card_image_objects["0"]
+        self.player_moveto_image = self.image_objects[0]
         self.player_moveto_label = tk.Label(self.top_info_frame, image=self.player_moveto_image)
         self.player_moveto_label.pack(side='left', padx=5)
 
@@ -156,7 +161,7 @@ class CardGameGUI:
     def create_opponent_cards(self, opponent_cards):
         self.opponent_card_labels = []
         for card in opponent_cards:
-            card_label = tk.Label(self.opponent_cards_frame, image=self.card_image_objects[f"{card.number}"])
+            card_label = tk.Label(self.opponent_cards_frame, image=self.image_objects[f"{card.number}"])
             card_label.pack(side='left')
             self.opponent_card_labels.append(card_label)
 
@@ -169,7 +174,7 @@ class CardGameGUI:
             card_frame = tk.Frame(self.cards_frame)
             card_frame.pack(side='left')
 
-            card_label = tk.Label(card_frame, image=self.card_image_objects[f"{card.number}({card.symbol})"])
+            card_label = tk.Label(card_frame, image=self.image_objects[f"{card.number}({card.symbol})"])
             card_label.pack()
 
             check_button = tk.Checkbutton(card_frame, variable=self.card_vars[i],
