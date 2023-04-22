@@ -71,7 +71,7 @@ class Game:
         async def tk_event_loop():
             while True:
                 root.update()
-                await asyncio.sleep(0)
+                await asyncio.sleep(0.1)
 
         await tk_event_loop()
 

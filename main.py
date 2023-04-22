@@ -65,7 +65,7 @@ class Tournament:
             print("No games have been played yet.")
 
 if __name__ == '__main__':
-    g = Game(GUI(), Forrest())
+    g = Game(Forrest(), GUI())
     g.run()
     g.print_result()
     exit()
