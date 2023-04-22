@@ -13,3 +13,6 @@ for number in range(10):
         os.rename(f"out-{i:03}.png", f"{number}({symbol}).png")
         i += 1
 
+subprocess.run("pdftoppm -png -r 40 boardsquares-individual.pdf out", shell=True)
+for i in range(101):
+    os.rename(f"out-{i+1:03}.png", f"square-{i}.png")
