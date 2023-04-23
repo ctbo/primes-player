@@ -604,10 +604,10 @@ class GUI(Player):
                              self.top_of_deck
                              )
         self.output_queue.put_nowait(gui_state)
-        self.output_queue.put_nowait("Hint: your options are:")
-        for cards, revealed in self.legal_moves(opponents):
-            self.output_queue.put_nowait(f"""- {'pass' if not cards else 'play revealed' if revealed else 'play'} {
-            ' '.join(str(card) for card in cards)}""")
+        # self.output_queue.put_nowait("Hint: your options are:")
+        # for cards, revealed in self.legal_moves(opponents):
+        #     self.output_queue.put_nowait(f"""- {'pass' if not cards else 'play revealed' if revealed else 'play'} {
+        #     ' '.join(str(card) for card in cards)}""")
 
         cards_to_play, revealed = await self.input_queue.get()
         if revealed:
