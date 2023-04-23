@@ -35,6 +35,46 @@ class Card:
 from dataclasses import dataclass
 from typing import List, Tuple, Union
 
+import tkinter as tk
+
+import tkinter as tk
+
+class ToolTip:
+    def __init__(self, widget, text):
+        self.widget = widget
+        self.text = text
+        self.tooltip = None
+        self.widget.bind("<Enter>", self.on_enter)
+        self.widget.bind("<Leave>", self.on_leave)
+
+    def on_enter(self, event=None):
+        # Get the widget's dimensions and position
+        widget_width = self.widget.winfo_width()
+        widget_height = self.widget.winfo_height()
+        x, y = self.widget.winfo_rootx(), self.widget.winfo_rooty()
+
+        # Calculate the position of the tooltip to be centered on the widget
+        x += widget_width // 2
+        y += widget_height // 2
+
+        self.tooltip = tk.Toplevel(self.widget)
+        self.tooltip.wm_overrideredirect(True)  # Remove the window border
+
+        # Create the tooltip label and update its position after the label is created
+        label = tk.Label(self.tooltip, text=self.text, background="white", relief="solid", borderwidth=1)
+        label.pack()
+        label.update_idletasks()  # Update the label's dimensions
+
+        # Calculate the final position of the tooltip considering the label's dimensions
+        x -= label.winfo_width() // 2
+        y -= label.winfo_height() // 2
+
+        self.tooltip.wm_geometry(f"+{x}+{y}")
+
+    def on_leave(self, event=None):
+        if self.tooltip:
+            self.tooltip.destroy()
+            self.tooltip = None
 
 @dataclass
 class GUIState:
@@ -188,6 +228,10 @@ class CardGameGUI:
 
             # Bind the <Button-1> event to the card_label and call the toggle_checkbox function
             card_label.bind('<Button-1>', lambda event, index=i: self.toggle_checkbox(index))
+
+            # Create a tooltip for the card_label with custom text
+            card_tooltip_text = f"({card.symbol})"
+            ToolTip(card_label, card_tooltip_text)
 
     def toggle_checkbox(self, index):
         current_value = self.card_vars[index].get()
