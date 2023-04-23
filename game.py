@@ -45,8 +45,15 @@ class Game:
         self.number_of_turns = 0
 
     def _draw_for_player(self, player):
+        """
+        Draw a card if the deck is nonempty.
+        :param player: The player who gets the card.
+        :return: True if a card was drawn
+        """
         if self.deck:
             player.receive_card(self.deck.pop())
+            return True
+        return False
 
     def set_verbose(self, verbose):
         self.verbose = verbose
@@ -75,6 +82,12 @@ class Game:
 
         await tk_event_loop()
 
+    def inform_about_top_of_deck(self, player):
+        if self.deck:
+            player.receive_information(TopOfDeckInfo(self.deck[-1].number))
+        else:
+            player.receive_information(TopOfDeckInfo(None))
+
     async def gameplay(self):
         for player in self.players:
             player.reset()
@@ -85,10 +98,13 @@ class Game:
         continue_move = False
         all_cards_played = []
 
+        self.inform_about_top_of_deck(player)
+
         while self.number_of_passes < len(self.players):
             if not continue_move:
                 all_cards_played = []
                 self.number_of_turns += 1
+
             player = self.players[0]
             opponents = self.players[1:]
             if self.verbose:
@@ -137,7 +153,12 @@ class Game:
             if not continue_move:
 
                 for _ in range(len(all_cards_played) + 1): # RULE: draw one more card than played
-                    self._draw_for_player(player)
+                    if self._draw_for_player(player):
+                        for opponent in opponents:
+                            opponent.receive_information(CardDrawInfo(player))
+
+                for p in self.players:
+                    self.inform_about_top_of_deck(p)
 
                 self.players = opponents + [player] # rotate players
 

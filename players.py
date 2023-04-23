@@ -70,7 +70,7 @@ class CardGameGUI:
     def load_images(self):
         self.image_objects = {}
 
-        for card in self.card_backs + self.card_fronts:
+        for card in self.card_backs + self.card_fronts + ["None"]:
             image_path = os.path.join(self.card_images_folder, f"{card}.png")
             self.image_objects[card] = tk.PhotoImage(file=image_path)
 
@@ -93,7 +93,7 @@ class CardGameGUI:
         self.top_of_deck_label = tk.Label(self.top_info_frame, text="Top of deck:")
         self.top_of_deck_label.pack(side='left', padx=5)
 
-        self.deck_top_image = self.image_objects["0"]
+        self.deck_top_image = self.image_objects["None"]
         self.deck_top_label = tk.Label(self.top_info_frame, image=self.deck_top_image)
         self.deck_top_label.pack(side='left', padx=5)
 
@@ -186,6 +186,14 @@ class CardGameGUI:
             check_button.pack()
             self.card_checkbuttons.append(check_button)
 
+            # Bind the <Button-1> event to the card_label and call the toggle_checkbox function
+            card_label.bind('<Button-1>', lambda event, index=i: self.toggle_checkbox(index))
+
+    def toggle_checkbox(self, index):
+        current_value = self.card_vars[index].get()
+        self.card_vars[index].set(not current_value)
+        self.update_selected_cards()
+
     def update_selected_cards(self):
         self.selected_cards = [card for card, var in zip(self.hand, self.card_vars) if var.get()]
         if (self.selected_cards, False) in self.legal_moves:
@@ -215,8 +223,7 @@ class CardGameGUI:
         self.player_position_label.configure(image = self.image_objects[state.player_position])
         self.player_moveto_label.configure(image = self.image_objects[state.player_position])
         self.label_opponent.configure(text = f"{state.opponent_name}'s cards:")
-        # self.label_opponent['text'] = state.opponent_string
-        # self.label_player['text'] = state.player_string
+        self.deck_top_label.configure(image = self.image_objects[str(state.top_of_deck)])
 
         # Clear the current card labels and checkbuttons
         for card_label in self.opponent_card_labels:
@@ -250,12 +257,25 @@ class Information:
 
 @dataclass
 class CardsPlayedInfo(Information):
+    """
+    A Player has played some cards.
+    """
     opponent: 'Player'
     cards_played: List[Union[Card, int]]
 
 @dataclass
 class TopOfDeckInfo(Information):
-    number: int
+    """
+    The number visible on the top of the deck or None if the deck is empty.
+    """
+    number: Union[int, None]
+
+@dataclass
+class CardDrawInfo(Information):
+    """
+    A Player has drawn a card.
+    """
+    player: 'Player'
 
 class Player(ABC):
     assigned_names = set()
@@ -495,15 +515,16 @@ class Human(Player):
 
     def receive_information(self, info: Information):
         if isinstance(info, CardsPlayedInfo):
-            print(f"""{self.name}, take note that {info.opponent.name} has just played {
+            print(f"""@{self.name}: {info.opponent.name} has just played {
                 ' '.join(str(card) for card in info.cards_played) if info.cards_played else 'pass'}""")
+        elif isinstance(info, CardDrawInfo):
+            print(f"@{self.name}: {info.player.name} has drawn a card.")
         else:
             assert(isinstance(info, TopOfDeckInfo))
-            if TopOfDeckInfo.number is None:
-                print(f"{self.name}, take note that the deck is empty")
+            if info.number is None:
+                print(f"@{self.name}: the deck is empty")
             else:
-                print(f"{self.name}, take note that the top of the deck is a {info.number}")
-
+                print(f"@{self.name}: the top of the deck is a {info.number}")
 
 
 class GUI(Player):
@@ -554,8 +575,14 @@ class GUI(Player):
         if isinstance(info, CardsPlayedInfo):
             self.output_queue.put_nowait(f"""{info.opponent.name} plays {
                 ' '.join(str(card) for card in info.cards_played) if info.cards_played else 'pass'}""")
+        elif isinstance(info, CardDrawInfo):
+            self.output_queue.put_nowait(f"{info.player.name} draws a card.")
         else:
             assert(isinstance(info, TopOfDeckInfo))
+            if info.number is None:
+                self.output_queue.put_nowait("The deck is empty.")
+            else:
+                self.output_queue.put_nowait(f"The top of the deck is {info.number}.")
             self.top_of_deck = info.number
 
 class RandomBot(Player):

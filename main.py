@@ -70,7 +70,7 @@ if __name__ == '__main__':
     g.print_result()
     exit()
 
-    t = Tournament(Forrest(), Forrest(), Forrest(), Forrest(), Forrest(), Forrest(), Forrest())
+    t = Tournament(RandomNoPassBot(), RandomNoPassBot())
     # t.set_verbose(True)
     while True:
         t.run(1000)
