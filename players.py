@@ -118,6 +118,9 @@ class CardGameGUI:
             image_path = os.path.join(self.card_images_folder, f"square-{square}.png")
             self.image_objects[square] = tk.PhotoImage(file=image_path)
 
+        image_path = os.path.join(self.card_images_folder, f"offboard.png")
+        self.image_objects["offboard"] = tk.PhotoImage(file=image_path)
+
     def create_widgets(self):
         self.main_frame = tk.Frame(self.master)
         self.main_frame.pack(fill='both', expand=True)
@@ -248,8 +251,11 @@ class CardGameGUI:
             self.reveal_button.config(state=tk.NORMAL)
         else:
             self.reveal_button.config(state=tk.DISABLED)
-        delta = sum(card.number for card in self.selected_cards)
-        self.player_moveto_label.configure(image = self.image_objects[self.player_position + delta])
+        moving_to = self.player_position + sum(card.number for card in self.selected_cards)
+        if 0 <= moving_to <= 100:
+            self.player_moveto_label.configure(image = self.image_objects[moving_to])
+        else:
+            self.player_moveto_label.configure(image = self.image_objects["offboard"])
 
 
     def play_cards(self):

@@ -1,0 +1,64 @@
+%!PS
+%%Creator: Harald Boegeholz
+%%Orientation: Portrait
+%%Pages: (atend)
+%%EndComments
+
+/pageWidth 180 def
+/pageHeight 252 def
+
+<< /PageSize [pageWidth pageHeight] >> setpagedevice
+
+% Calculate the midpoint of the bounding box of a string
+/stringMidpoint {
+    gsave
+    newpath
+    0 0 moveto
+    false charpath
+    flattenpath
+    pathbbox
+    /ury exch def
+    /urx exch def
+    /lly exch def
+    /llx exch def
+    urx llx sub 2 div
+    ury lly sub 2 div
+    grestore
+} def
+
+% Show the string centered on the current point
+/showCentered {
+    dup stringMidpoint neg exch neg exch rmoveto
+    show
+} def
+
+/Helvetica findfont 24 scalefont setfont
+0.5 pageWidth mul 24 moveto
+0 setgray (off-board) showCentered
+newpath
+    
+10 setlinewidth
+1 0 0 setrgbcolor
+
+/center
+{
+    pageWidth 2 div pageHeight 2 div
+} def
+
+/radius
+{
+    pageWidth 0.3 mul
+} def
+
+center radius 0 360 arc
+clipsave
+clip
+center moveto radius neg radius rmoveto radius 2 mul radius -2 mul rlineto stroke
+
+cliprestore
+
+newpath center radius 0 360 arc
+
+stroke
+
+showpage
