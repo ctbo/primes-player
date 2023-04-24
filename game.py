@@ -162,12 +162,23 @@ class Game:
 
                 self.players = opponents + [player] # rotate players
 
-        # game over. Sort the players
+        # game over.
+        for player in self.players:
+            player.receive_information(GameOverInfo())
+        # Sort the players
         self.players.sort(key=lambda player: player.position, reverse=True)
         if self.GUI_player:
             self.GUI_player.output_queue.put_nowait("Game over. Result:")
             for player in self.players:
                 self.GUI_player.output_queue.put_nowait(f"{player.name}: {player.position}")
+
+            # the game is over, but we call `_choose_cards_to_play()` one last time
+            # just to update the user interface.
+            # This call won't return because there are no legal moves to play
+            if self.players[0] is self.GUI_player:
+                await self.GUI_player._choose_cards_to_play(self.players[1:])
+            else:
+                await self.GUI_player._choose_cards_to_play(self.players[:1])
 
     def print_result(self):
         print("GAME OVER! Result:")

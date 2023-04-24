@@ -86,6 +86,7 @@ class GUIState:
     player_hand: List[Card]
     legal_moves: List[Tuple[List[Card], bool]]
     top_of_deck: int
+    game_over: bool
 
 
 class CardGameGUI:
@@ -103,6 +104,7 @@ class CardGameGUI:
         self.selected_cards = []
         self.legal_moves = []
         self.player_position = 0
+        self.game_over = 0
 
         self.load_images()
         self.create_widgets()
@@ -223,18 +225,24 @@ class CardGameGUI:
             card_label = tk.Label(card_frame, image=self.image_objects[f"{card.number}({card.symbol})"])
             card_label.pack()
 
-            check_button = tk.Checkbutton(card_frame, variable=self.card_vars[i],
-                                          onvalue=True, offvalue=False,
-                                          command=self.update_selected_cards)
+            if not self.game_over:
+                check_button = tk.Checkbutton(card_frame, variable=self.card_vars[i],
+                                              onvalue=True, offvalue=False,
+                                              command=self.update_selected_cards)
+            else:
+                check_button = tk.Checkbutton(card_frame, variable=self.card_vars[i],
+                                              onvalue=True, offvalue=False,
+                                              state=tk.DISABLED)
             check_button.pack()
             self.card_checkbuttons.append(check_button)
 
-            # Bind the <Button-1> event to the card_label and call the toggle_checkbox function
-            card_label.bind('<Button-1>', lambda event, index=i: self.toggle_checkbox(index))
+            if not self.game_over:
+                # Bind the <Button-1> event to the card_label and call the toggle_checkbox function
+                card_label.bind('<Button-1>', lambda event, index=i: self.toggle_checkbox(index))
 
-            # Create a tooltip for the card_label with custom text
-            card_tooltip_text = f"({card.symbol})"
-            ToolTip(card_label, card_tooltip_text)
+                # Create a tooltip for the card_label with custom text
+                card_tooltip_text = f"({card.symbol})"
+                ToolTip(card_label, card_tooltip_text)
 
     def toggle_checkbox(self, index):
         current_value = self.card_vars[index].get()
@@ -265,6 +273,7 @@ class CardGameGUI:
         self.input_queue.put_nowait((self.selected_cards, True))
 
     def update_GUI_state(self, state):
+        self.game_over = state.game_over
         self.legal_moves = state.legal_moves
         self.player_position = state.player_position
         self.opponent_name_label.configure(text = f"{state.opponent_name}:")
@@ -327,6 +336,11 @@ class CardDrawInfo(Information):
     """
     player: 'Player'
 
+class GameOverInfo(Information):
+    """
+    This empty class just signals that the game is over.
+    """
+
 class Player(ABC):
     assigned_names = set()
     def __init__(self, base_name=None):
@@ -370,6 +384,7 @@ class Player(ABC):
         """
         self.hand = []
         self.position = 0
+        self.game_over = False
 
 
     def __str__(self):
@@ -569,12 +584,14 @@ class Human(Player):
                 ' '.join(str(card) for card in info.cards_played) if info.cards_played else 'pass'}""")
         elif isinstance(info, CardDrawInfo):
             print(f"@{self.name}: {info.player.name} has drawn a card.")
-        else:
-            assert(isinstance(info, TopOfDeckInfo))
+        elif isinstance(info, TopOfDeckInfo):
             if info.number is None:
                 print(f"@{self.name}: the deck is empty")
             else:
                 print(f"@{self.name}: the top of the deck is a {info.number}")
+        else:
+            assert(isinstance(info, GameOverInfo))
+            self.game_over = True
 
 
 class GUI(Player):
@@ -600,8 +617,9 @@ class GUI(Player):
                              "You",
                              self.position,
                              self.hand,
-                             self.legal_moves(opponents),
-                             self.top_of_deck
+                             [] if self.game_over else self.legal_moves(opponents),
+                             self.top_of_deck,
+                             self.game_over
                              )
         self.output_queue.put_nowait(gui_state)
         # self.output_queue.put_nowait("Hint: your options are:")
@@ -627,13 +645,15 @@ class GUI(Player):
                 ' '.join(str(card) for card in info.cards_played) if info.cards_played else 'pass'}""")
         elif isinstance(info, CardDrawInfo):
             self.output_queue.put_nowait(f"{info.player.name} draws a card.")
-        else:
-            assert(isinstance(info, TopOfDeckInfo))
+        elif isinstance(info, TopOfDeckInfo):
             if info.number is None:
                 self.output_queue.put_nowait("The deck is empty.")
             else:
                 self.output_queue.put_nowait(f"The top of the deck is {info.number}.")
             self.top_of_deck = info.number
+        else:
+            assert(isinstance(info, GameOverInfo))
+            self.game_over = True
 
 class RandomBot(Player):
     """
