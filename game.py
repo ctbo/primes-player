@@ -31,6 +31,7 @@ class Game:
 
         self.input_queue = None
         self.output_queue = None
+        self.should_exit = False
         if self.GUI_player:
             assert len(self.players) == 2, "GUI presently only supports exactly one opponent."
             self.input_queue = asyncio.Queue()
@@ -72,15 +73,24 @@ class Game:
         root = tk.Tk()
         gui = CardGameGUI(root, self.input_queue, self.output_queue)
 
-        asyncio.create_task(self.gameplay())
-        asyncio.create_task(gui.receive_messages())
+        def on_closing():
+            self.should_exit = True
+
+        root.protocol("WM_DELETE_WINDOW", on_closing)
+
+        gameplay_task = asyncio.create_task(self.gameplay())
+        message_task = asyncio.create_task(gui.receive_messages())
 
         async def tk_event_loop():
-            while True:
+            while not self.should_exit:
                 root.update()
                 await asyncio.sleep(0.1)
 
         await tk_event_loop()
+
+        gameplay_task.cancel()
+        message_task.cancel()
+        root.destroy()
 
     def inform_about_top_of_deck(self, player):
         if self.deck:
