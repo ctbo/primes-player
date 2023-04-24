@@ -37,8 +37,6 @@ from typing import List, Tuple, Union
 
 import tkinter as tk
 
-import tkinter as tk
-
 class ToolTip:
     def __init__(self, widget, text):
         self.widget = widget
@@ -55,13 +53,13 @@ class ToolTip:
 
         # Calculate the position of the tooltip to be centered on the widget
         x += widget_width // 2
-        y += widget_height // 2
+        y += widget_height // 5 # go closer to the top, not centered
 
         self.tooltip = tk.Toplevel(self.widget)
         self.tooltip.wm_overrideredirect(True)  # Remove the window border
 
         # Create the tooltip label and update its position after the label is created
-        label = tk.Label(self.tooltip, text=self.text, background="white", relief="solid", borderwidth=1)
+        label = tk.Label(self.tooltip, text=self.text, background="#FFFF99", relief="flat", borderwidth=0)
         label.pack()
         label.update_idletasks()  # Update the label's dimensions
 
@@ -241,7 +239,7 @@ class CardGameGUI:
                 card_label.bind('<Button-1>', lambda event, index=i: self.toggle_checkbox(index))
 
                 # Create a tooltip for the card_label with custom text
-                card_tooltip_text = f"({card.symbol})"
+                card_tooltip_text = f" {card.symbol} "
                 ToolTip(card_label, card_tooltip_text)
 
     def toggle_checkbox(self, index):
