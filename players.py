@@ -8,6 +8,7 @@ from __future__ import annotations
 import random
 from abc import ABC, abstractmethod
 import tkinter as tk
+from tkinter import ttk
 
 import os
 import platform
@@ -35,8 +36,6 @@ class Card:
 from dataclasses import dataclass
 from typing import List, Tuple, Union
 
-import tkinter as tk
-
 class ToolTip:
     def __init__(self, widget, text):
         self.widget = widget
@@ -59,7 +58,7 @@ class ToolTip:
         self.tooltip.wm_overrideredirect(True)  # Remove the window border
 
         # Create the tooltip label and update its position after the label is created
-        label = tk.Label(self.tooltip, text=self.text, background="#FFFF99", relief="flat", borderwidth=0)
+        label = tk.Label(self.tooltip, text=self.text, background="#fcd292", relief="flat", borderwidth=0)
         label.pack()
         label.update_idletasks()  # Update the label's dimensions
 
@@ -88,6 +87,15 @@ class GUIState:
 
 
 class CardGameGUI:
+    BACKGROUND_COLOR = "#784904"
+    FOREGROUND_COLOR = "#fff4e3"
+    BUTTON_BACKGROUND_COLOR = "#945a06"
+    BUTTON_BORDERCOLOR = "#c9ab7f"
+    BUTTON_ACTIVE_COLOR = "#b57f31"
+    BUTTON_PRESSED_COLOR = "#d99023"
+    BUTTON_DISABLED_COLOR = BACKGROUND_COLOR
+    BUTTON_DISABLED_FOREGROUND = "#ab9a82"
+
     def __init__(self, master, input_queue, output_queue):
         self.master = master
         self.master.title("Grant's Game")
@@ -103,6 +111,9 @@ class CardGameGUI:
         self.legal_moves = []
         self.player_position = 0
         self.game_over = 0
+
+        self.style = ttk.Style()
+        self.style.theme_use("clam")
 
         self.load_images()
         self.create_widgets()
@@ -122,83 +133,111 @@ class CardGameGUI:
         self.image_objects["offboard"] = tk.PhotoImage(file=image_path)
 
     def create_widgets(self):
-        self.main_frame = tk.Frame(self.master)
+        self.main_frame = tk.Frame(self.master, bg=self.BACKGROUND_COLOR)
         self.main_frame.pack(fill='both', expand=True)
 
-        self.left_frame = tk.Frame(self.main_frame)
+        self.left_frame = tk.Frame(self.main_frame, bg=self.BACKGROUND_COLOR, padx=5)
         self.left_frame.grid(row=0, column=0, sticky='nsew')
 
         # Create a new frame for the top information
-        self.top_info_frame = tk.Frame(self.left_frame)
+        self.top_info_frame = tk.Frame(self.left_frame, bg=self.BACKGROUND_COLOR)
         self.top_info_frame.pack(pady=5)
 
         # Add "Top of deck:" text and card image
-        self.top_of_deck_label = tk.Label(self.top_info_frame, text="Top of deck:")
+        self.top_of_deck_label = tk.Label(self.top_info_frame, text="Top of deck:", bg=self.BACKGROUND_COLOR, fg=self.FOREGROUND_COLOR)
         self.top_of_deck_label.pack(side='left', padx=5)
 
         self.deck_top_image = self.image_objects["None"]
-        self.deck_top_label = tk.Label(self.top_info_frame, image=self.deck_top_image)
+        self.deck_top_label = tk.Label(self.top_info_frame, image=self.deck_top_image, bg=self.BACKGROUND_COLOR)
         self.deck_top_label.pack(side='left', padx=5)
 
         # Add "Opponent:" text and card image
-        self.opponent_name_label = tk.Label(self.top_info_frame, text="Opponent:")
+        self.opponent_name_label = tk.Label(self.top_info_frame, text="Opponent:", bg=self.BACKGROUND_COLOR, fg=self.FOREGROUND_COLOR)
         self.opponent_name_label.pack(side='left', padx=5)
 
         self.opponent_position_image = self.image_objects[0]
-        self.opponent_position_label = tk.Label(self.top_info_frame, image=self.opponent_position_image)
+        self.opponent_position_label = tk.Label(self.top_info_frame, image=self.opponent_position_image, bg=self.BACKGROUND_COLOR)
         self.opponent_position_label.pack(side='left', padx=5)
 
         # Add "You:" text and card image
-        self.player_name_label = tk.Label(self.top_info_frame, text="You:")
+        self.player_name_label = tk.Label(self.top_info_frame, text="You:", bg=self.BACKGROUND_COLOR, fg=self.FOREGROUND_COLOR)
         self.player_name_label.pack(side='left', padx=5)
 
         self.player_position_image = self.image_objects[0]
-        self.player_position_label = tk.Label(self.top_info_frame, image=self.player_position_image)
+        self.player_position_label = tk.Label(self.top_info_frame, image=self.player_position_image, bg=self.BACKGROUND_COLOR)
         self.player_position_label.pack(side='left', padx=5)
 
-        self.moveto_label = tk.Label(self.top_info_frame, text="moving to:")
+        self.moveto_label = tk.Label(self.top_info_frame, text="moving to:", bg=self.BACKGROUND_COLOR, fg=self.FOREGROUND_COLOR)
         self.moveto_label.pack(side='left', padx=5)
 
         self.player_moveto_image = self.image_objects[0]
-        self.player_moveto_label = tk.Label(self.top_info_frame, image=self.player_moveto_image)
+        self.player_moveto_label = tk.Label(self.top_info_frame, image=self.player_moveto_image, bg=self.BACKGROUND_COLOR)
         self.player_moveto_label.pack(side='left', padx=5)
 
-        self.label_opponent = tk.Label(self.left_frame, text="Opponent's cards:")
+        self.label_opponent = tk.Label(self.left_frame, text="Opponent's cards:", bg=self.BACKGROUND_COLOR, fg=self.FOREGROUND_COLOR)
         self.label_opponent.pack(pady=5)
 
-        self.opponent_cards_frame = tk.Frame(self.left_frame)
+        self.opponent_cards_frame = tk.Frame(self.left_frame, bg=self.BACKGROUND_COLOR)
         self.opponent_cards_frame.pack(pady=5)
 
         self.opponent_card_labels = []
 
-        self.label_player = tk.Label(self.left_frame, text="Your cards:")
+        self.label_player = tk.Label(self.left_frame, text="Your cards:", bg=self.BACKGROUND_COLOR, fg=self.FOREGROUND_COLOR)
         self.label_player.pack(pady=5)
 
-        self.cards_frame = tk.Frame(self.left_frame)
+        self.cards_frame = tk.Frame(self.left_frame, bg=self.BACKGROUND_COLOR)
         self.cards_frame.pack(pady=5)
 
         self.card_checkbuttons = []
 
-        self.play_button = tk.Button(self.left_frame, text="Play selected cards", command=self.play_cards)
+        self.style.configure("Custom.TButton",
+                             background=self.BUTTON_BACKGROUND_COLOR,
+                             foreground=self.FOREGROUND_COLOR,
+                             bordercolor=self.BUTTON_BORDERCOLOR
+                             )
+        self.style.map(
+            "Custom.TButton",
+            background=[
+                ("active", self.BUTTON_ACTIVE_COLOR),
+                ("pressed", self.BUTTON_PRESSED_COLOR),
+                ("disabled", self.BUTTON_DISABLED_COLOR),  # Set the disabled background color
+            ],
+            foreground=[
+                ("active", self.FOREGROUND_COLOR),
+                ("pressed", self.FOREGROUND_COLOR),
+                ("disabled", self.BUTTON_DISABLED_FOREGROUND)  # Set the disabled text color
+            ],
+        )
+
+        self.play_button = ttk.Button(self.left_frame, text="Play selected cards",
+                                      command=self.play_cards, style="Custom.TButton")
         self.play_button.pack(pady=5)
 
-        self.reveal_button = tk.Button(self.left_frame, text="Play selected cards revealed", command=self.reveal_cards)
+        self.reveal_button = ttk.Button(self.left_frame, text="Play selected cards revealed",
+                                        command=self.reveal_cards, style="Custom.TButton")
         self.reveal_button.pack(pady=5)
 
         # self.quit_button = tk.Button(self.left_frame, text="Quit", command=self.master.quit)
         # self.quit_button.pack(pady=5)
 
-        self.right_frame = tk.Frame(self.main_frame)
+        self.right_frame = tk.Frame(self.main_frame, bg=self.BACKGROUND_COLOR)
         self.right_frame.grid(row=0, column=1, sticky='nsew')
 
-        self.log_label = tk.Label(self.right_frame, text="Game Log:")
-        self.log_label.pack(pady=5)
+        # self.log_label = tk.Label(self.right_frame, text="Game Log:", bg=self.BACKGROUND_COLOR, fg=self.FOREGROUND_COLOR)
+        # self.log_label.pack(pady=5)
 
         self.scrollbar = tk.Scrollbar(self.right_frame)
         self.scrollbar.pack(side='right', fill='y')
 
-        self.log_text = tk.Text(self.right_frame, wrap='word', width = 30, yscrollcommand=self.scrollbar.set)
-        self.log_text.pack(expand=True, fill='both')
+        font = self.label_player.cget("font")
+        self.log_text = tk.Text(self.right_frame, wrap='word', width = 30,
+                                font=font,
+                                yscrollcommand=self.scrollbar.set,
+                                bg=self.BACKGROUND_COLOR,
+                                fg=self.FOREGROUND_COLOR,
+                                borderwidth=0,
+                                highlightthickness=0)
+        self.log_text.pack(expand=True, fill='both', pady=5)
         self.scrollbar.config(command=self.log_text.yview)
 
         self.main_frame.columnconfigure(1, weight=1)
@@ -207,7 +246,7 @@ class CardGameGUI:
     def create_opponent_cards(self, opponent_cards):
         self.opponent_card_labels = []
         for card in opponent_cards:
-            card_label = tk.Label(self.opponent_cards_frame, image=self.image_objects[f"{card.number}"])
+            card_label = tk.Label(self.opponent_cards_frame, image=self.image_objects[f"{card.number}"], bg=self.BACKGROUND_COLOR)
             card_label.pack(side='left')
             self.opponent_card_labels.append(card_label)
 
@@ -217,20 +256,20 @@ class CardGameGUI:
 
         self.card_checkbuttons = []
         for i, card in enumerate(player_cards):
-            card_frame = tk.Frame(self.cards_frame)
+            card_frame = tk.Frame(self.cards_frame, bg=self.BACKGROUND_COLOR)
             card_frame.pack(side='left')
 
-            card_label = tk.Label(card_frame, image=self.image_objects[f"{card.number}({card.symbol})"])
+            card_label = tk.Label(card_frame, image=self.image_objects[f"{card.number}({card.symbol})"], bg=self.BACKGROUND_COLOR)
             card_label.pack()
 
             if not self.game_over:
                 check_button = tk.Checkbutton(card_frame, variable=self.card_vars[i],
                                               onvalue=True, offvalue=False,
-                                              command=self.update_selected_cards)
+                                              command=self.update_selected_cards, bg=self.BACKGROUND_COLOR)
             else:
                 check_button = tk.Checkbutton(card_frame, variable=self.card_vars[i],
                                               onvalue=True, offvalue=False,
-                                              state=tk.DISABLED)
+                                              state=tk.DISABLED, bg=self.BACKGROUND_COLOR)
             check_button.pack()
             self.card_checkbuttons.append(check_button)
 

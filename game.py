@@ -84,7 +84,7 @@ class Game:
         async def tk_event_loop():
             while not self.should_exit:
                 root.update()
-                await asyncio.sleep(0.1)
+                await asyncio.sleep(0.05)
 
         await tk_event_loop()
 
