@@ -296,6 +296,10 @@ class CardGameGUI:
 
         self.update_selected_cards()
 
+        if self.game_over:
+            self.player_moveto_label.destroy()
+            self.moveto_label.destroy()
+
     def log_message(self, message):
         self.log_text.configure(state='normal')
         self.log_text.insert(tk.END, message+'\n')
