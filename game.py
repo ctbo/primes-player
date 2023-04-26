@@ -22,7 +22,7 @@ class Game:
                 player = Human(player)
             if isinstance(player, Human):
                 assert not self.GUI_player, "Can't combine GUI with text mode Human."
-                human_present = True
+                self.human_present = True
             if isinstance(player, GUI):
                 assert not self.GUI_player, "Only one player per game can have a GUI."
                 assert not self.human_present, "Can't combine GUI with text mode Human."
@@ -38,17 +38,19 @@ class Game:
             self.output_queue = asyncio.Queue()
             self.GUI_player.connect_queues(self.input_queue, self.output_queue)
 
-
         self.deck = [Card(number, symbol) for number, primes in cardDict.items() for symbol in primes]
         random.shuffle(self.deck)
 
         self.number_of_setbacks = 0
         self.number_of_turns = 0
 
+        if self.human_present:
+            print(f"Version: {VERSION}")
+
     def _draw_for_player(self, player):
         """
         Draw a card if the deck is nonempty.
-        :param player: The player who gets the card.
+        :param player: The player who gets the card
         :return: True if a card was drawn
         """
         if self.deck:
@@ -108,7 +110,8 @@ class Game:
         continue_move = False
         all_cards_played = []
 
-        self.inform_about_top_of_deck(player)
+        for player in self.players:
+            self.inform_about_top_of_deck(player)
 
         while self.number_of_passes < len(self.players):
             if not continue_move:
@@ -135,16 +138,16 @@ class Game:
                 can_setback = any(opponent.symbols_match(symbols) for opponent in opponents)
 
                 if revealed:
-                    assert can_setback, "Can't reveal cards unless setting back an opponent." # RULE
+                    assert can_setback, "Can't reveal cards unless setting back an opponent."  # RULE
                     for opponent in opponents:
                         if opponent.symbols_match(symbols):
                             opponent.move(-delta)
-                            player.move(delta) # RULE: move forward for each opponent that is set back
+                            player.move(delta)  # RULE: move forward for each opponent that is set back
                             self.number_of_setbacks += 1
                     cards_played = cards
                     continue_move = True
                 else:
-                    assert len(set(numbers)) == 1, "Can't play different numbers unless setting back someone." # RULE
+                    assert len(set(numbers)) == 1, "Can't play different numbers unless setting back someone."  # RULE
                     player.move(delta)
                     cards_played = [card.number for card in cards]
                     continue_move = False
@@ -162,7 +165,7 @@ class Game:
             # If they don't, they draw new cards and it's the next player's turn.
             if not continue_move:
 
-                for _ in range(len(all_cards_played) + 1): # RULE: draw one more card than played
+                for _ in range(len(all_cards_played) + 1):  # RULE: draw one more card than played
                     if self._draw_for_player(player):
                         for opponent in opponents:
                             opponent.receive_information(CardDrawInfo(player))
@@ -170,7 +173,7 @@ class Game:
                 for p in self.players:
                     self.inform_about_top_of_deck(p)
 
-                self.players = opponents + [player] # rotate players
+                self.players = opponents + [player]  # rotate players
 
         # game over.
         for player in self.players:

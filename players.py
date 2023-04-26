@@ -20,6 +20,17 @@ def clear_screen():
     else:
         os.system("clear")
 
+import subprocess
+
+VERSION = "unknown version"
+try:
+    result = subprocess.run(["git", "describe", "--dirty"], capture_output=True, text=True, check=False)
+    if result.returncode == 0:
+        VERSION = result.stdout.strip()
+except:
+    pass
+
+
 from carddict import *
 
 class Card:
@@ -223,9 +234,6 @@ class CardGameGUI:
         self.right_frame = tk.Frame(self.main_frame, bg=self.BACKGROUND_COLOR)
         self.right_frame.grid(row=0, column=1, sticky='nsew')
 
-        # self.log_label = tk.Label(self.right_frame, text="Game Log:", bg=self.BACKGROUND_COLOR, fg=self.FOREGROUND_COLOR)
-        # self.log_label.pack(pady=5)
-
         self.scrollbar = tk.Scrollbar(self.right_frame)
         self.scrollbar.pack(side='right', fill='y')
 
@@ -239,6 +247,9 @@ class CardGameGUI:
                                 highlightthickness=0)
         self.log_text.pack(expand=True, fill='both', pady=5)
         self.scrollbar.config(command=self.log_text.yview)
+
+        self.version_label = tk.Label(self.right_frame, text=VERSION, bg=self.BACKGROUND_COLOR, fg=self.FOREGROUND_COLOR)
+        self.version_label.pack(pady=5)
 
         self.main_frame.columnconfigure(1, weight=1)
         self.main_frame.rowconfigure(0, weight=1)
